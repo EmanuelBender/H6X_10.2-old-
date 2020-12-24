@@ -1,4 +1,5 @@
 #include <WiFi.h>
+#include <Preferences.h>
 #include <SPI.h>
 #include <Adafruit_GFX.h>             // Core graphics library
 #include <Adafruit_ST7789.h>          // Hardware-specific library for ST7789
@@ -9,10 +10,13 @@
 #include <ClosedCube_HDC1080.h>       // HDC1080
 #include "time.h"
 
-
 //// Define ////
 
-#define Revision "v1.8"        // CODE REVISION [Active: Beeper, CJMCU8128, WiFi Monitor, Serial Monitor]
+#define Revision "v1.9"
+// CODE REVISION [Active: Beeper, CJMCU8128, WiFi Monitor, Serial Monitor, Error Detection(Wifi, CCS811)]
+//
+//
+//
 
 #define TFT_CS 14                     // chip select pin // TFT/LCD Screen
 #define TFT_DC 32                     // data/command pin
@@ -29,10 +33,10 @@ CCS811 myCCS811(CCS811_ADDR);
 ClosedCube_HDC1080 myHDC1080;
 BME280 myBME280;
 WiFiServer server(80);
+Preferences preferences;
 
 const char* ssid       = mySSID;      //  Integers And Constants ////
 const char* password   = myPassword;
-String header;
 
 unsigned long previousTime = 0; // timeout wifi
 const long timeoutTime = 20000; // 20000
@@ -40,7 +44,7 @@ const long timeoutTime = 20000; // 20000
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
-
+String header;
 
 const int CO2TH = 1500;         // Sensor Thresholds //
 const int VOCTH = 240;
@@ -50,20 +54,20 @@ const int low = (2000, 350);  // freq, duration
 const int high = (4000, 350);
 const int tick = (3000, 6);
 
-void printLocalTime()                 // Local Time Void
+void printLocalTime()
 {
   struct tm timeinfo;
-  if (WiFi.status() != WL_CONNECTED) {
+  if (!getLocalTime(&timeinfo)) {
     tft.setCursor(11, 8);
     tft.setTextColor(INDIA, BLACK);
     tft.setTextSize(1, 2);
-    tft.println("             WiFi Failed ");
-  } else {
-    tft.setCursor(11, 8);                           // Print Time
-    tft.setTextColor(GREYA, BLACK);
-    tft.setTextSize(1, 2);
-    tft.println(&timeinfo, "%A, %d. %B  |  %H:%M:%S");
+    tft.println("Failed to obtain time");
+    return;
   }
+  tft.setCursor(11, 8);                           // Print Time
+  tft.setTextColor(GREYA, BLACK);
+  tft.setTextSize(1, 2);
+  tft.println(&timeinfo, "%A, %d. %B  |  %H:%M:%S");
 }
 
 
@@ -74,55 +78,51 @@ void setup()//                                              /    /   /   /  /  /
   Serial.begin(115200);
   delay(800);
 
-  //pinMode(LED, OUTPUT );                       // Output Pin Define, LED High
-  //pinMode(BLK, OUTPUT);
+  //pinMode(LED, OUTPUT );                           // Output Pin Define, Setup LED High
+  //pinMode(BLK, OUTPUT);                      // screen lights out
   //digitalWrite(LED, HIGH);
   //digitalWrite(BLK, HIGH);
 
   tft.init(240, 240);                          // TFT Initialize
   tft.setRotation(2);
   tft.fillScreen(BLACK);
-  tft.setTextColor(WHITE, BLACK);
 
   {
+    tft.setTextColor(WHITE, BLACK);             // Connect WiFi
     tft.setCursor(5, 15);
     tft.setTextSize(2);
     tft.println();
-    tft.printf("Connecting %s ", ssid);       // Connect WiFi
+    tft.printf("Connecting %s ", ssid);
     tft.println();
-
     WiFi.begin(ssid, password);
-
-    tft.println(" .");
-    delay(300);
-    tft.println(" .");
-    delay(300);
-    tft.println(" .");
-    delay(300);
-    tft.println(" .");
-    tft.println();
-    delay(150);
+    while (WiFi.status() != WL_CONNECTED) {
+      tft.println(" .");
+      delay(200);
+      if ((millis() / 1000) > 5)
+        break;
+    }
 
     if (WiFi.status() == WL_CONNECTED)
     {
       server.begin();
-      tft.setTextColor(GREEN);
+      tft.setTextColor(DARKGREEN);
       tft.println("CONNECTED");
       delay(50);
+      tft.setTextColor(WHITE);
       Serial.println(WiFi.localIP());
       tft.println(WiFi.localIP());
+      delay(500);
     } else {
       tft.setTextColor(RED);
       tft.println(" WiFi Failed");
       tone(beep, low);
+      delay(200);
     }
 
-    delay(100);
+    delay(200);
     tft.fillScreen(BLACK);
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    printLocalTime();
-    WiFi.disconnect(true);                                    // disconnect WiFi
-    WiFi.mode(WIFI_OFF);
+    //WiFi.disconnect(true);                                    // disconnect WiFi
+    //WiFi.mode(WIFI_OFF);
 
     {
       myBME280.settings.commInterface = I2C_MODE;              // CCS811 Sensor Setup
@@ -133,52 +133,39 @@ void setup()//                                              /    /   /   /  /  /
       myBME280.settings.tempOverSample = 6; // 5
       myBME280.settings.pressOverSample = 8;
       myBME280.settings.humidOverSample = 8;
-
       myBME280.begin();
       myHDC1080.begin(0x40);
-
       CCS811Core::status returnCode = myCCS811.begin();
       bool error = myCCS811.checkForStatusError();
     }
 
-    tft.fillRoundRect(6, 3, 224, 1, 1, GREYC);        // GFX Static Elements
+    tft.fillRoundRect(6, 3, 224, 1, 1, GREYC);                // GFX Static Elements
     tft.fillRoundRect(6, 25, 224, 1, 1, GREYC);
     tft.fillRoundRect(6, 54, 224, 1, 1, GREYB);
 
-    tft.setTextColor(WHITE, BLACK);
-    tft.setCursor(0, 36);
+    preferences.begin("my-app", false);                       // Bootup Counter
+    //preferences.clear(); // Remove all preferences under the opened namespace
+    //preferences.remove("counter"); // Or remove the counter key only
+    unsigned int counter = preferences.getUInt("counter", 0);
+    counter++;  // Increase counter by 1
+    tft.setTextColor(CYAN, BLACK);
+    tft.setCursor(95, 221);
     tft.setTextSize(2);
-    tft.println(" Sensors");
-    tft.println();
-    tone(beep, 620, 9);
-    delay(70);
-    tone(beep, 620, 11);
-    delay(10);
+    tft.printf("%u\n", counter);
+    preferences.putUInt("counter", counter);// Store the counter to the Preferences
+    preferences.end();   // Close the Preferences
+
   }
   //digitalWrite(LED, LOW);
-}// Setup Done.
+}                             // Setup Done.
 
 
 
-void loop()                                                               ///////////////VOID LOOP///////////////
+
+void loop()                                                                  ///////////////VOID LOOP///////////////
 {
-  const int currentTime = millis() / 1000 / 60;
-
-  printLocalTime();
-  delay(10);
-
-  // CCS811 Data Check
-  if (myCCS811.dataAvailable())
-
-    //If so, have the sensor read and calculate the results.
-    //Get them later
-    myCCS811.readAlgorithmResults();
-
-  //compensating the CCS811 with humidity and temperature readings from the HDC1080
-  myCCS811.setEnvironmentalData(myHDC1080.readHumidity(), myHDC1080.readTemperature() / 1.23);
-  delay(5);
-
-  const int temp = myHDC1080.readTemperature() / 1.23;      // LOOP CCS811 SETUP //
+  const int currentTime = millis() / 1000 / 60;  // in min
+  const int temp = myHDC1080.readTemperature() / 1.23;                   // LOOP CCS811 SETUP //
   const int tempBME = myBME280.readTempC();
   const int RH = myHDC1080.readHumidity();
   const int CO2 = myCCS811.getCO2();
@@ -187,25 +174,34 @@ void loop()                                                               //////
   String pressure = String(myBME280.readFloatPressure() * 0.000145038 / 714); // in ATM
   pressure.toCharArray(pressure_value, 4);
 
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  printLocalTime();                                                       // Print Time void
+  delay(10);
 
-  tft.setCursor(109, 36); // No Error Sensor Working
-  tft.setTextSize(2);
-  tft.setTextColor(RED, BLACK);
-  tft.print("       ");
 
-  Serial.print(CO2 / 10); // divided by 10 to make easier to see   // Serial Plotter Logging
-  Serial.print(" ");
-  Serial.print(TVOC);
-  Serial.print(" ");
-  Serial.print(temp);
-  Serial.print(" ");
-  Serial.println(RH);
+  if (myCCS811.dataAvailable())                                          // CCS811 Data Check
   {
+    //If so, have the sensor read and calculate the results.
+    //Get them later
+    myCCS811.readAlgorithmResults(); //compensating the CCS811 with humidity and temperature readings from the HDC1080
 
+    myCCS811.setEnvironmentalData(myHDC1080.readHumidity(), myHDC1080.readTemperature() / 1.23);
+    delay(5);
 
+    tft.setCursor(0, 36);
+    tft.setTextSize(2);
+    tft.setTextColor(WHITE);
+    tft.print(" Sensors         ");
 
+    Serial.print(CO2 / 10); // divided by 10 to make easier to see         // Serial Plotter Logging
+    Serial.print(" ");
+    Serial.print(TVOC);
+    Serial.print(" ");
+    Serial.print(temp);
+    Serial.print(" ");
+    Serial.println(RH);
 
-    WiFiClient client = server.available();                  ////  Print to Local IP  ////
+    WiFiClient client = server.available();                           ////  Print to Local IP  ////
 
     if (client)
     {
@@ -214,14 +210,14 @@ void loop()                                                               //////
       tft.setTextSize(2);
       tft.setTextColor(DARKGREEN);
       tft.print(" Sensors ");
-      String currentLine = "";                   //Storing the incoming data in the string
+      String currentLine = ""; //Storing the incoming data in the string
       while (client.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
-        if (client.available())                  //if there is some client data available
+        if (client.available())  //if there is some client data available
         {
-          char c = client.read();                // read a byte
-          if (c == '\n')                       // check for newline character,
+          char c = client.read(); // read a byte
+          if (c == '\n') // check for newline character,
           {
-            if (currentLine.length() == 0)      //if line is blank it means its the end of the client HTTP request
+            if (currentLine.length() == 0) //if line is blank it means its the end of the client HTTP request
             {
               client.println("HTTP/1.1 200 OK");
               client.println("Content-type:text/html");
@@ -237,9 +233,9 @@ void loop()                                                               //////
               client.println("<body><body bgcolor='#383838'>");
               client.println("<br />");
               if (ccs811 < 0.1) {
-                client.println("<a href=\"/?button1on\"\"><button1 style='font-size:400%; background-color:d#363636; color:green;border-radius:5px; position:absolute; top:20px; left:30px;'>Sensors</a>");
+                client.println("<a href=\"/?button1on\"\"><button1 style='font-size:400%; background-color:#000000; color:green;border-radius:5px; position:absolute; top:20px; left:30px;'>Sensors</a>");
               } else {
-                client.println("<a href=\"/?button1off\"\"><button2 style='font-size:400%; background-color:#363636; color:red;border-radius:5px; position:absolute; top:20px; left:30px;'>Sensors</a>");
+                client.println("<a href=\"/?button1off\"\"><button2 style='font-size:400%; background-color:#000000; color:red;border-radius:5px; position:absolute; top:20px; left:30px;'>Sensors</a>");
               }
               client.println("<br />");
               client.println("<br />");
@@ -269,7 +265,6 @@ void loop()                                                               //////
               if (ccs811 > 0) {                     // ccs811 Error check - if yes, set text RED
                 CCS811Core::status returnCode = myCCS811.begin();
                 bool error = myCCS811.checkForStatusError();
-                delay(6);
                 switch ( returnCode )
                 {
                   case CCS811Core::SENSOR_ID_ERROR:
@@ -287,12 +282,10 @@ void loop()                                                               //////
                 }
               }
               client.print("<br/>");
-
               client.println("</BODY>");
               client.println("</HTML>");
-              delay(6);
 
-              break;  // break out of the while loop:
+              break;
             }
             else
             { // if you got a newline, then clear currentLine:
@@ -306,106 +299,108 @@ void loop()                                                               //////
         }
       }
     }
-  }
+  } 
+
 
   delay(6);
-  
-    {
-      tft.setCursor(0, 61);                                          //// CCS811 Data Print
-      tft.setTextSize(3);
-      tft.setTextColor(GREYA, BLACK);
-      tft.print("  Alt ");
+
+  {
+    tft.setCursor(0, 61);                                          //// CCS811 Data Screen Print
+    tft.setTextSize(3);
+    tft.setTextColor(GREYA, BLACK);
+
+    tft.print("  Atm ");
+    tft.setTextColor(WHITE, BLACK);
+    tft.print(pressure);
+    tft.setTextColor(GREYA, BLACK);
+    tft.println("a  ");
+
+    tft.print("  Alt ");
+    tft.setTextColor(WHITE, BLACK);
+    tft.print(alt);
+    tft.setTextColor(GREYA, BLACK);
+    tft.println("m ");
+
+    tft.print(" Temp ");
+    tft.setTextColor(WHITE, BLACK);
+    tft.print(temp);
+    tft.setTextColor(GREYA, BLACK);
+    tft.println("C  ");
+
+    tft.print("   RH ");
+    tft.setTextColor(WHITE, BLACK);
+    tft.print(RH);
+    tft.setTextColor(GREYA, BLACK);
+    tft.println("% ");
+
+    tft.print("  CO2 ");
+    if (CO2 > CO2TH) {                   // Air Quality Alarm Beeper Dependent on Sensor Values and Alarm Threshold
+      tft.setTextColor(INDIA, BLACK);
+      tone(beep, (800 + ((CO2 - 600) / 8)), (((CO2 - 1300) / 200)));
+    } else {
       tft.setTextColor(WHITE, BLACK);
-      tft.print(alt);
-      tft.setTextColor(GREYA, BLACK);
-      tft.println("m ");
-
-      tft.print("Press ");
-      tft.setTextColor(WHITE, BLACK);
-      tft.print(pressure);
-      tft.setTextColor(GREYA, BLACK);
-      tft.println("a  ");
-
-      tft.print(" Temp ");
-      tft.setTextColor(WHITE, BLACK);
-      tft.print(temp);
-      tft.setTextColor(GREYA, BLACK);
-      tft.println("C  ");
-
-      tft.print("   RH ");
-      tft.setTextColor(WHITE, BLACK);
-      tft.print(RH);
-      tft.setTextColor(GREYA, BLACK);
-      tft.println("% ");
-
-      tft.print("  CO2 ");
-      if (CO2 > CO2TH) {                          // Beeper Dependent on Sensor Values and Alarm Threshold
-        tft.setTextColor(INDIA, BLACK);
-        tone(beep, (800 + ((CO2 - 600) / 8)), (((CO2 - 1300) / 200)));
-      } else {
-        tft.setTextColor(WHITE, BLACK);
-      }
-      tft.print(CO2);
-      tft.println("   ");
-      tft.setTextColor(GREYA, BLACK);
-      tft.print(" tVOC ");
-      if (TVOC > VOCTH) {
-        tft.setTextColor(INDIA, BLACK);
-        tone(beep, ((600 + TVOC / 11)), (((CO2 - 1300) / 200)));
-      } else {
-        tft.setTextColor(WHITE, BLACK);
-      }
-      tft.print(TVOC);
-      tft.println("   ");
-      tft.setTextColor(GREYA, BLACK);
-      tft.setTextSize(2);
-      tft.println("              ");
-
-      tft.setTextColor(CYAN, BLACK);         // Timer and Firmware
-      tft.print(millis() / 1000 / 60);
-      tft.setTextColor(DARKCYAN, BLACK);
-      tft.print("min");
-      tft.setTextColor(CYAN, BLACK);
-      tft.print("           ");
-      tft.print(Revision);
-    } delay(6);
-
-    int ccs811 = myCCS811.checkForStatusError();
-    bool error = ccs811;
-
-    if (ccs811 > 0) {                                                     //// CCS811 Error Check LIVE no beeping
-      CCS811Core::status returnCode2 = myCCS811.begin();
-      
-      switch ( returnCode2 )
-      {
-        case CCS811Core::SENSOR_ID_ERROR:
-          tft.setCursor(109, 36);
-          tft.setTextSize(2);
-          tft.setTextColor(RED, BLACK);
-          tft.print("ID ERR");
-          break;
-        case CCS811Core::SENSOR_I2C_ERROR:
-          tft.setCursor(109, 36);
-          tft.setTextSize(2);
-          tft.setTextColor(RED, BLACK);
-          tft.print("I2C ERR");
-          break;
-        case CCS811Core::SENSOR_INTERNAL_ERROR:
-          tft.setCursor(109, 36);
-          tft.setTextSize(2);
-          tft.setTextColor(RED, BLACK);
-          tft.print("ITRL ERR");
-          break;
-        case CCS811Core::SENSOR_GENERIC_ERROR:
-          tft.setCursor(109, 36);
-          tft.setTextSize(2);
-          tft.setTextColor(RED, BLACK);
-          tft.setTextColor(DARKGREEN, BLACK);
-          tft.print("GNRL ERR");
-          break;
-      }
     }
-  
+    tft.print(CO2);
+    tft.println("   ");
+    tft.setTextColor(GREYA, BLACK);
+    tft.print(" tVOC ");
+    if (TVOC > VOCTH) {
+      tft.setTextColor(INDIA, BLACK);
+      tone(beep, (600 + TVOC) / 11), ((CO2 - 1300) / 200);
+    } else {
+      tft.setTextColor(WHITE, BLACK);
+    }
+    tft.print(TVOC);
+    tft.println("   ");
+    tft.setTextColor(GREYA, BLACK);
+    tft.setTextSize(2);
+    tft.println("              ");
+
+    tft.setTextColor(CYAN, BLACK);         // Time elapsed and Code Revision
+    tft.print(currentTime);
+    tft.setTextColor(DARKCYAN, BLACK);
+    tft.print("min");
+    tft.setTextColor(CYAN, BLACK);
+    tft.setCursor(191, 221);
+    tft.print(Revision);
+  } delay(6);
+
+  int ccs811 = myCCS811.checkForStatusError();                         //// CCS811 Error Check LIVE no beeping
+  bool error = ccs811;
+
+  delay(12);
+  if (ccs811 > 0) {
+    CCS811Core::status returnCode2 = myCCS811.begin();
+    switch ( returnCode2 )
+    {
+      case CCS811Core::SENSOR_ID_ERROR:
+        tft.setCursor(109, 36);
+        tft.setTextSize(2);
+        tft.setTextColor(RED, BLACK);
+        tft.print("ID ERR");
+        break;
+      case CCS811Core::SENSOR_I2C_ERROR:
+        tft.setCursor(109, 36);
+        tft.setTextSize(2);
+        tft.setTextColor(RED, BLACK);
+        tft.print("I2C ERR");
+        break;
+      case CCS811Core::SENSOR_INTERNAL_ERROR:
+        tft.setCursor(109, 36);
+        tft.setTextSize(2);
+        tft.setTextColor(RED, BLACK);
+        tft.print("ITRL ERR");
+        break;
+      case CCS811Core::SENSOR_GENERIC_ERROR:
+        tft.setCursor(109, 36);
+        tft.setTextSize(2);
+        tft.setTextColor(RED, BLACK);
+        tft.setTextColor(DARKGREEN, BLACK);
+        tft.print("GNRL ERR");
+        break;
+    }
+  }
+
   delay(300);
 }
 
