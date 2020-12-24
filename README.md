@@ -26,11 +26,11 @@ Back in germany i Started planning. Very little know how about machining coding 
 <p>
 <p>
 You can see all the Planning, Prototypes and Material i made 'til now here:
-______________________________________________________________________________________________________________________________
+____________________________________________________________________________________________
 <p>
 
 https://www.dropbox.com/sh/55ojpmb22klrcrt/AAD_1oTMBvdd2am53Xtve0X7a?dl=0
-<p>______________________________________________________________________________________________________________________________
+<p>____________________________________________________________________________________________
 <p>
 <b>if you are intersted in knowing more or joining in Helping me, write a comment.</b>
 <p>    <p/>
