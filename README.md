@@ -1,5 +1,5 @@
 
-<h1 style="font-family:verdana;">[H6X Sensor Station] [in development]</h1>
+<h1 style="font-family:verdana;">[H6X Multi Station] [in development]</h1>
 ESP32 based Hardware Sensor Project for real-world use
 <p>by Emanuel Bender
 
