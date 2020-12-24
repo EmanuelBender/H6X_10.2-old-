@@ -20,7 +20,7 @@ Government chartered ariplane, wich we almost missed.<br/>
 
 Back in germany i Started planning. Very little know how about machining coding etc. but i"m getting there, slowly but surely.<br/>
 Going through all the available arduino sensors and now looking into industrial sensors.<br/>
->Getting into deep rabbitholes about for example thermal conductivity of aluminium vs copper variants.<br/>
+Getting into deep rabbitholes about for example thermal conductivity of aluminium vs copper variants.<br/>
 Trying to add functionality into every last square mm while keeping it 'minimal'.<br/>
 <br/>
 <br/>
@@ -42,7 +42,7 @@ ______________________________________________________________________________
 Long Range 1800lm BLF Torch<br/>
 LED Diffuse Lamp 5A (75x LEDS)<br/>
 1.54" Screen<br/>
->Phone WiFi connection<br/>
+Phone WiFi connection<br/>
 <br/>
 <b>Charging:</b><br/>
 USB-C 24W PD3.0 Output<br/>
