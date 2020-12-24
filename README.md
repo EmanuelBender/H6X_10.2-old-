@@ -3,16 +3,16 @@
 ESP32 based Hardware Sensor Project for real-world use
 <p>by Emanuel Bender
 
-<p><b>The Idea</b> (Storytime):<p/>
+<p><b>The Idea</b> (Storytime):<br/>
 
-<p>
+
 came to me after i returned from India where i had been traveling there on Foot, Train and Motorbike from North to South and back. 
 Around March 2020 I was spending my time with new friends in Rishikesh, one of whom got really sick, right when COVID really started in India.
 We questioned bringing her to the Hospital but couldnt really tell, no doctors to find and the medicine shops gave us wrong or fake antibiotics, wich didn't help.
 So, during that time we had the need for a thermometer but couldn't find any after searching whole Tapovan.
 Her condition worstened, so we brought her, masked up and evading the doctors in the entrances, who were to trying to test all the "Covid Tourists".
 And found out after the usual India chaos, that she had a bladder infection. 
-<p>She stayed there 4 days, we visited.
+<p>She stayed there 4 days, we visited.<br/>
 <p>That gave me this idea, what if I could build a thing that had say, a Powerbank a Lamp, Temperature and HeartRate monitor.
 We definitely wouldn't have been so clueless and not aware of the danger that she had been in.
 Our friend got slowly better with the help of antibiotics and right after we had to leave from Delhi for Germany with the last 
