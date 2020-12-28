@@ -144,8 +144,8 @@ void setup()//=========================================== SETUP ================
     tft.fillScreen(TFT_BLACK);
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     printLocalTime();
-    //WiFi.disconnect(true);                                    // disconnect WiFi
-    //WiFi.mode(WIFI_OFF);
+    WiFi.disconnect(true);                                    // disconnect WiFi
+    WiFi.mode(WIFI_OFF);
 
     {
       myBME280.settings.commInterface = I2C_MODE;              // CCS811 Sensor Setup
