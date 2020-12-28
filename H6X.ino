@@ -1,46 +1,46 @@
 #include <WiFi.h>
 #include <Preferences.h>
 #include <SPI.h>
-#include <Adafruit_GFX.h>               // Core graphics library
-#include <Adafruit_ST7789.h>            // Hardware-specific library for ST7789
+#include <Wire.h>
 #include <Credentials.h>
 #include <ESP32Servo.h>                 // Beeps
 #include <SparkFunCCS811.h>             // CJMCU-8128 - CCS811 [from Banggood with all 3 sensors]
 #include <SparkFunBME280.h>             // BME280
 #include <ClosedCube_HDC1080.h>         // HDC1080
+#include <TFT_eSPI.h>                   // Hardware-specific library
 #include "time.h"
 
-//// Define ////
+//                                      //  Define
 
-#define Revision "v1.9"
+#define Revision "v1.9.1"
 // Active:
-// Beeper | Bootup counter |  Error Detection [Wifi, CCS811] | Current Sensor
+// Beeper | Bootup counter | Voltage & Current Sensor
 // CJMCU8128 |
 // Serial logging
+// Error Detection [Wifi, CCS811]
 
-#define TFT_CS 14                       // chip select pin // TFT/LCD Screen
-#define TFT_DC 32                       // data/command pin
-#define TFT_RST 15                      // reset pin, or set to -1 and connect to Arduino RESET pin
-Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
+#define VT_PIN 35
+#define AT_PIN 34
 
 #define LED 2                           // Pinouts & I2Cs
-int beep = 13;
+#define beep 13
 
-//#define BLK 36
 //#define PCF8575 0x10                  // I2C Breakout Board PCF8575
 #define CCS811_ADDR 0x5A                // CCS811 Env. Connect
 
 CCS811 myCCS811(CCS811_ADDR);
 ClosedCube_HDC1080 myHDC1080;
 BME280 myBME280;
+
 WiFiServer server(80);
 Preferences preferences;
+TFT_eSPI tft = TFT_eSPI();  // Invoke custom library
 
 const char* ssid       = mySSID;        //  Integers And Constants
 const char* password   = myPassword;
 
 unsigned long previousTime = 0; // timeout wifi
-const long timeoutTime = 20000; // 20000
+const long timeoutTime = 15000; // 20000
 
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
@@ -51,18 +51,21 @@ const int CO2TH = 1500;                 // Sensor Thresholds
 const int VOCTH = 240;
 char pressure_value[4];
 
-const int low = (2000, 350);            // Beeper (freq, duration)
+int avgS = 15;   // Voltage & Current Sensing Samples
+int Calarm = 1; // Current Alarm Threshold
+
+const int low = (2000, 250);            // Beeper (freq, duration)
 const int high = (4000, 350);
 const int tick = (3000, 6);
 
 void sensorXY()                          // Voids
 {
-  tft.setCursor(5, 24);
+  tft.setCursor(6, 24);
   tft.setTextSize(2);
 }
 void errXY()
 {
-  tft.setCursor(100, 24);
+  tft.setCursor(90, 24);
   tft.setTextSize(2);
 }
 void batXY()
@@ -75,37 +78,39 @@ void printLocalTime()
 {
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
-    tft.setCursor(70, 0);
-    tft.setTextColor(INDIA, BLACK);
-    tft.setTextSize(1, 2);
+    tft.setCursor(72, 0);                   // Print Time
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.setTextSize(2);
     tft.println("Time Failed");
     return;
   }
   tft.setCursor(74, 0);                   // Print Time
-  tft.setTextColor(GREYA, BLACK);
+  tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
   tft.setTextSize(2);
   tft.println(&timeinfo, "%H:%M:%S");
 }
 
 
 
-void setup()//                                              /    /   /   /  /  / //////// VOID SETUP //////// /  /  /   /    /
+void setup()//=========================================== SETUP ===========================================
 {
 
-  Serial.begin(115200);
-  delay(800);
+  //Serial.begin(115200);
+  //delay(500);
 
   //pinMode(LED, OUTPUT );                           // Output Pin Define, Setup LED High
   //pinMode(BLK, OUTPUT);                      // screen off
   //digitalWrite(LED, HIGH);
   //digitalWrite(BLK, HIGH);
 
-  tft.init(240, 240);                          // TFT Initialize
-  tft.setRotation(2);
-  tft.fillScreen(BLACK);
+
+  tft.begin();                          // TFT Initialize
+  tft.setSwapBytes(true);
+  tft.setRotation(0);
+  tft.fillScreen(TFT_BLACK);
 
   {
-    tft.setTextColor(WHITE, BLACK);             // Connect WiFi
+    tft.setTextColor(TFT_WHITE;             // Connect WiFi
     tft.setCursor(5, 15);
     tft.setTextSize(2);
     tft.println();
@@ -122,22 +127,23 @@ void setup()//                                              /    /   /   /  /  /
     if (WiFi.status() == WL_CONNECTED)
     {
       server.begin();
-      tft.setTextColor(DARKGREEN);
+      tft.setTextColor(TFT_GREEN);
       tft.println("CONNECTED");
       delay(50);
-      tft.setTextColor(WHITE);
+      tft.setTextColor(TFT_WHITE);
       Serial.println(WiFi.localIP());
       tft.println(WiFi.localIP());
       delay(500);
     } else {
-      tft.setTextColor(RED);
+      tft.setTextColor(TFT_RED);
       tft.println(" WiFi Failed");
       tone(beep, low);
       delay(200);
     }
 
-    delay(100);
-    tft.fillScreen(BLACK);
+    tft.fillScreen(TFT_BLACK);
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    printLocalTime();
     //WiFi.disconnect(true);                                    // disconnect WiFi
     //WiFi.mode(WIFI_OFF);
 
@@ -153,14 +159,15 @@ void setup()//                                              /    /   /   /  /  /
       myBME280.begin();
       myHDC1080.begin(0x40);
       CCS811Core::status returnCode = myCCS811.begin();
-      //bool error = myCCS811.checkForStatusError();
+
     }
+    tft.fillScreen(TFT_BLACK);
     preferences.begin("my-app", false);                       // Bootup Counter
     //preferences.clear(); // Remove all preferences under the opened namespace
     //preferences.remove("counter"); // Or remove the counter key only
     unsigned int counter = preferences.getUInt("counter", 0);
     counter++;  // Increase counter by 1
-    tft.setTextColor(CYAN, BLACK);
+    tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
     tft.setCursor(100, 225);
     tft.setTextSize(2);
     tft.printf("%u\n", counter);
@@ -168,18 +175,26 @@ void setup()//                                              /    /   /   /  /  /
     preferences.end();   // Close the Preferences
 
   }
-  //digitalWrite(LED, LOW);
-}                             // Setup Done.
+
+  tft.drawRoundRect(0, 19, 240, 24, 4, TFT_MIDDLEGREY);                // GFX Static Elements
+  tft.fillRoundRect(0, 50, 75, 30, 3, TFT_MIDDLEGREY);
+  tft.fillRoundRect(80, 50, 80, 30, 3, TFT_MIDDLEGREY);
+  tft.fillRoundRect(165, 50, 75, 30, 3, TFT_MIDDLEGREY);
+
+  tft.drawRoundRect(0, 50, 75, 70, 3, TFT_MIDDLEGREY);
+  tft.drawRoundRect(80, 50, 80, 70, 3, TFT_MIDDLEGREY);
+  tft.drawRoundRect(165, 50, 75, 70, 3, TFT_MIDDLEGREY);
+
+  tft.drawRoundRect(1, 51, 73, 68, 3, TFT_BLACK);
+  tft.drawRoundRect(81, 51, 78, 68, 3, TFT_BLACK);
+  tft.drawRoundRect(166, 51, 73, 68, 3, TFT_BLACK);
+}                                                                      // Setup Done.
 
 
-
-
-void loop()                                                                  ///////////////VOID LOOP///////////////
+void loop()//=========================================== VOID LOOP ===========================================
 {
 
-  //tft.fillScreen(BLACK);
-
-  const int currentTime = millis() / 1000 / 60;  // in min            /// INT LOOP
+  const int minElapsed = millis() / 1000 / 60;  // in min            /// INT LOOP
   const int temp = myHDC1080.readTemperature() / 1.225;
   const int tempBME = myBME280.readTempC() / 1.225;
   const int RH = myHDC1080.readHumidity();
@@ -189,25 +204,58 @@ void loop()                                                                  ///
   String pressure = String(myBME280.readFloatPressure() * 0.000145038 / 714); // in ATM
   pressure.toCharArray(pressure_value, 4);
 
-
-  //tft.fillRoundRect(65, 0, 224, 1, 1, GREYC);                // GFX Static Elements
-  tft.fillRoundRect(6, 20, 224, 1, 1, GREYB);
-  tft.fillRoundRect(6, 41, 224, 1, 1, GREYB);
-
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   printLocalTime();                                                       // Print Time void
+
+  int at_temp = analogRead(AT_PIN);
+  int vt_temp = analogRead(VT_PIN);
+
+  unsigned int x = 0;
+  float VcsValue = 0.0, VSamples = 0.0, AvgVcs = 0.0, voltage = 0.0;
+
+  for (int x = 0; x < avgS; x++) { //Get avgS samples
+    VSamples = VSamples + vt_temp;  //Add samples together
+    delay (3); // let ADC settle before next sample 3ms
+  }
+  AvgVcs = VSamples / avgS; //Taking Average of Samples
+  voltage = AvgVcs / 4095 * 17.8;
+
+  unsigned int y = 0;
+  float AcsValue = 0.0, ASamples = 0.0, AvgAcs = 0.0, current = 0.0;
+
+  for (int y = 0; y < avgS; y++) { //Get avgS samples
+    ASamples = ASamples + at_temp;  //Add samples together
+    delay (3); // let ADC settle before next sample 3ms
+  }
+  AvgAcs = ASamples / avgS; //Taking Average of Samples
+  current = AvgAcs / 4095 * 3;
+
+
+  if (current > Calarm) {
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+
+  } else {
+    tft.setTextColor(TFT_GOLD, TFT_BLACK);
+  }
+  tft.setTextSize(2);
+  tft.setCursor(200, 0);
+  tft.print(current, 1);
+
+  tft.setTextColor(TFT_INDIA, TFT_BLACK);
+  tft.setCursor(200, 24);
+  tft.print(voltage, 1);
+
+  //float W = (voltage * current);
+  //tft.print(W, 2);
+  //tft.println("W  ");
+
+  //float maHspent = ((current * time) / voltage); // for reading in mAh
+  //tft.setTextColor(TFT_NAVY, TFT_BLACK);
+  //tft.print(maHspent);
+  //tft.println(" maH spent     ");
 
   Serial.print(CO2 / 10); // divided by 10 to make easier to see         // Serial Plotter Logging
   Serial.print(" ");
   Serial.print(TVOC);
-  Serial.print(" ");
-  //Serial.print(tempBME);
-  //Serial.print(" ");
-  //Serial.print(RH);
-  //Serial.print(" ");
-  //Serial.print(current);
-  //Serial.print(" ");
-  //Serial.print(voltage);
   Serial.println("");
 
   if (myCCS811.dataAvailable())                    //// CCS811 Data Screen Print /////
@@ -215,76 +263,98 @@ void loop()                                                                  ///
     myCCS811.readAlgorithmResults(); //compensating the CCS811 with humidity and temperature readings from the HDC1080
     myCCS811.setEnvironmentalData(RH, temp);
 
-    {
-      //tft.setCursor(0, 0);
-      //tft.setTextColor(YELLOW, BLACK);         // Print Alt
-      //tft.print(alt);
-      //tft.setTextColor(GREYA, BLACK);
-      //tft.println("m ");
+    //tft.setCursor(0, 0);
+    //tft.setTextColor(YELLOW, TFT_BLACK);         // Print Alt
+    //tft.print(alt);
+    //tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    //tft.println("m ");
 
-      tft.setCursor(0, 0);                   // Print Temp
-      tft.setTextSize(2);
-      tft.setTextColor(YELLOW, BLACK);
-      tft.print(tempBME);
-      tft.setTextColor(GREYA, BLACK);
-      tft.println("C");
+    tft.setCursor(0, 0);
+    tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);// Print Temp
+    tft.setTextSize(2);
 
-      tft.setCursor(0, 61);
-      tft.setTextSize(3);
-      tft.setTextColor(GREYA, BLACK);
-
-      //tft.print("  Atm ");                // Print ATM
-      //tft.setTextColor(WHITE, BLACK);
-      //tft.print(pressure);
-      //tft.setTextColor(GREYA, BLACK);
-      //tft.println("a  ");
-
-      tft.print("   RH ");                // Print RH
-      tft.setTextColor(WHITE, BLACK);
-      tft.print(RH);
-      tft.setTextColor(GREYA, BLACK);
-      tft.println("% ");
-      tft.println();
-
-      tft.print("  CO2 ");                 // Print CO2
-      if (CO2 > CO2TH) {                   // Air Quality Alarm Beeper Dependent on Sensor Values and Alarm Threshold
-        tft.setTextColor(INDIA, BLACK);
-        tone(beep, (800 + ((CO2 - 600) / 8)), (((CO2 - 1300) / 200)));
-      } else {
-        tft.setTextColor(WHITE, BLACK);
-      }
-      tft.print(CO2);
-      tft.println("   ");
-
-      tft.setTextColor(GREYA, BLACK);      // Print tVOC
-      tft.print(" tVOC ");
-      if (TVOC > VOCTH) {
-        tft.setTextColor(INDIA, BLACK);
-        tone(beep, (600 + TVOC) / 10), ((CO2 - 1300) / 200);
-      } else {
-        tft.setTextColor(WHITE, BLACK);
-      }
-      tft.print(TVOC);
-      tft.println("   ");
+    if (tempBME < 15) {
+      tft.setTextColor(TFT_CYAN, TFT_BLACK);
     }
+    if (tempBME > 28) {
+      tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+    }
+    if (tempBME > 35) {
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+    }
+    
+    tft.print(tempBME);
+    tft.setTextSize(1);
+    tft.print("o ");
+
+    //tft.print("  Atm ");                    // Print ATM
+    //tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    //tft.print(pressure);
+    //tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    //tft.println("a  ");
+
+    tft.setTextSize(3);
+    tft.setCursor(11, 55);
+    tft.setTextColor(TFT_BLACK, TFT_MIDDLEGREY);
+    tft.print("CO2");
+    tft.setCursor(85, 55);
+    tft.print("tVOC");
+    tft.setCursor(186, 55);
+    tft.print("RH");
+
+    if (CO2 > CO2TH) {    // Air Quality Alarm Beeper Dependent on Sensor Values and Alarm Threshold
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+      tone(beep, (800 + ((CO2 - 600) / 8)), ((CO2 - 1200) / 200));
+      delay(30);
+      tone(beep, (800 + ((CO2 - 600) / 8)), ((CO2 - 1200) / 200));
+    } else {
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    }
+    tft.setCursor(3, 89);
+    tft.print(CO2);
+    tft.println(" ");
+
+    tft.setCursor(95, 89);
+    if (TVOC > 9) {
+      tft.setCursor(85, 89);
+    }
+    if (TVOC > 99) {
+      tft.setCursor(77, 89);
+    }
+
+    if (TVOC > VOCTH) {
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+      //tone(beep, (600 + TVOC) / 9), ((CO2 - 1200) / 200);
+    } else {
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    }
+    tft.print(" ");
+    tft.print(TVOC);
+    tft.println(" ");
   }
 
-  tft.setCursor(0, 225);
-  tft.setTextColor(GREYA, BLACK);
+  tft.setCursor(178, 89);// Print RH
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(3);
+  tft.print(RH);
+  tft.println("%");
+
+  tft.setCursor(0, 225);                                 // Time elapsed and Code Revision
+  tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
   tft.setTextSize(2);
-  tft.setTextColor(CYAN, BLACK);         // Time elapsed and Code Revision
-  tft.print(currentTime);
-  tft.setTextColor(DARKCYAN, BLACK);
+  tft.setTextColor(TFT_CYAN, TFT_BLACK);
+  tft.print(minElapsed);
+  tft.setTextColor(TFT_DARKCYAN, TFT_BLACK);
   tft.print("min");
-  tft.setTextColor(CYAN, BLACK);
+  tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.setCursor(191, 225);
   tft.print(Revision);
-  
+
   if (myCCS811.checkForStatusError() > 0) {                         //// CCS811 Error Check LIVE no beeping
     CCS811Core::status returnCode2 = myCCS811.begin();
-    tft.setTextColor(RED, BLACK);
+    tft.setTextColor(TFT_RED, TFT_BLACK);
     sensorXY();
-    tft.print("Sensors");
+    tft.print("Status");
     errXY();
     switch ( returnCode2 )
     {
@@ -303,22 +373,21 @@ void loop()                                                                  ///
     }
   } else {
     sensorXY();
-    tft.setTextColor(WHITE, BLACK);
-    tft.print("Sensors     ");
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.print("Status     ");
 
   }
 
 
   WiFiClient client = server.available();                           ////  WiFi Print to Local IP  ////
-
   if (client)
   {
     int ccs811 = myCCS811.checkForStatusError();
     sensorXY();
-    tft.setTextColor(GREEN);
-    tft.print("Sensors");
+    tft.setTextColor(TFT_GREEN);
+    tft.print("Status HTTP");
     String currentLine = ""; //Storing the incoming data in the string
-    while (client.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
+    while (client.connected() && minElapsed - previousTime <= timeoutTime) {  // loop while the client's connected
       if (client.available())  //if there is some client data available
       {
         char c = client.read(); // read a byte
@@ -331,12 +400,12 @@ void loop()                                                                  ///
             client.println("<font style='font-family:electric toaster'>");
             client.println();
             client.println("<meta name='apple-mobile-web-app-capable' content='yes' />");
-            client.println("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />");
+            client.println("<meta name='apple-mobile-web-app-status-bar-style' content='white-translucent' />");
             client.println("<HTML>");              // Header
             client.println("<HEAD>");
             client.println("<head><title>HEX 6</title></head>");
             client.println("<BODY>");               //Body
-            client.println("<body><div style='text-align: left'>");
+            client.println("<body><div style='text-align: middle'>");
             client.println("<body><body bgcolor='#383838'>");
             client.println("<br />");
             if (ccs811 < 0.1) {
@@ -346,7 +415,7 @@ void loop()                                                                  ///
             }
             client.println("<br />");
             client.println("<br />");
-            client.print("<p style=\"text-align: left; font-size:300%; color: white\"> Altitude: ");
+            client.print("<p style=\"text-align: middle; font-size:300%; color: white\"> Altitude: ");
             client.print(alt);
             client.print("m    ");
             client.print("<br/> Pressure: ");
@@ -366,10 +435,10 @@ void loop()                                                                  ///
             client.print("ppm");
             client.print("<br/>");
             client.print("<br/> Time: ");
-            client.print(currentTime);
+            client.print(minElapsed);
             client.print("m <br/>");
             client.print("<br/>");
-            if (ccs811 > 0) {                     // ccs811 Error check - if yes, set text RED
+            if (ccs811 > 0) {                     // ccs811 Error check - if yes, set text TFT_RED
               CCS811Core::status returnCode = myCCS811.begin();
               switch ( returnCode )
               {
@@ -406,7 +475,7 @@ void loop()                                                                  ///
     }
   }
 
-  delay(100);
+  delay(12);
 }
 
 
