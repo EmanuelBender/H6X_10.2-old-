@@ -48,7 +48,7 @@ Phone WiFi connection<br/>
 USB-C 24W PD3.0 Output<br/>
 USB-A 24W QC3.0 Output<br/>
 5W Qi Wireless Input<br/>
-USB-C 4A Input & USB-C 2A Input<br/>
+USB-C PD3.0 (4A) Input<br/>
 <br/>
 <b> Sensors:</b><br/>
 Heartrate, Blood Oxygen<br/>
