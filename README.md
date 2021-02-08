@@ -11,7 +11,7 @@ We questioned bringing her to the Hospital but couldnt really tell, no doctors t
 So, during that time we had the need for a thermometer but couldn't find any after searching whole Tapovan.
 Her condition worstened, so after a lot of back and forth, we brought her to the Rishikesh Hospital, masked up and evading the doctors in the entrances, who were to trying to test all the "Covid Tourists".
 We found out, after the usual India chaos, that she had a bladder infection that had started spreading to her kidneys. <br/>
-She stayed there 4 days.
+She stayed there 4 days, we visited. <br/>
 <br/>
 That gave me this idea, what if I could build a thing that had say, a Powerbank, a Lamp, Temperature and HeartRate monitor.
 We definitely wouldn't have been so clueless and unaware of the danger that she had been in.
