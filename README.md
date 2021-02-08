@@ -1,6 +1,7 @@
 
 <h1 style="font-family:verdana;">[H6X Multi Pod] [in development]</h1>
-ESP32 based Hardware Sensor Project for real-world use
+All-Round Life Saver - The electronic swiss-army-knife that can do everything your phone can't.							
+
 <p>by Emanuel Bender
 
 <p><b>The Idea</b> (Storytime):<br/>
