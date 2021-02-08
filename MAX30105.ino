@@ -3,21 +3,36 @@
 void readHRO2()
 {
 
-  if ((touchRead(tPIN1)) < touchTH) {
-    buttonState = 1;
-  }
-  else {
-    buttonState = 0;
-  }
+  bool buttonState1 = (digitalRead(tPAD1));
 
-  if (buttonState != lastButtonState) {
-    if (buttonState == 1) {
+  if (buttonState1 != lastButtonState) {
+    if (buttonState1 == 1) {
+      ledcWrite(ledChannel, 0);
+      
       particleSensor.wakeUp();
       tft.fillScreen(TFT_BLACK);
-      tft.drawRoundRect(40, 10, 160, 220, 10, TFT_MIDDLEGREY);
-      tft.fillRoundRect(41, 11, 158, 218, 10, TFT_DARKGREY);
+      tft.drawRoundRect(20, 10, 200, 220, 10, TFT_MIDDLEGREY);
+      tft.fillRoundRect(21, 11, 198, 218, 10, TFT_DARKGREY);
 
-      while ((touchRead(tPIN1)) < touchTH) {
+      int i = 0;  //                                 ======= HR + SpO2 Settings =======
+      int Num = 35;             //  calculate SpO2 by this sampling interval
+
+      const byte RATE_SIZE = 7; //  Increase this for more HR averaging. 4 is good.
+      byte rates[RATE_SIZE];
+      byte rateSpot = 0;
+      long lastBeat = 0;
+      float beatsPerMinute;
+      int beatAvg;
+
+      double ESpO2 = 90.0;     //initial value of estimated SpO2
+      double FSpO2 = 0.7;      //filter factor for estimated SpO2
+      double frate = 0.95;     // 0.95 low pass filter for IR/red LED value to eliminate AC component
+      double avered = 0;
+      double aveir = 0;
+      double sumirrms = 0;
+      double sumredrms = 0;
+
+      while ((digitalRead(tPAD1)) == HIGH) {
 
         uint32_t ir, red;
         double fred, fir;
@@ -50,7 +65,7 @@ void readHRO2()
         if (checkForBeat(irValue) == true)
         {
           //We sensed a beat!
-          tone(beep, 2500, 30);
+          tone(beep, 2500, 25);
           long delta = millis() - lastBeat;
           lastBeat = millis();
 
@@ -69,22 +84,20 @@ void readHRO2()
         }
 
         tft.setTextDatum(MC_DATUM);
-        tft.setTextPadding(120);
+        tft.setTextPadding(80);
 
         tft.setTextSize(2);
-        tft.setTextColor(TFT_WHITE, TFT_BLACK);
+        tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
         tft.drawNumber((beatAvg), 120, 72, 7);
         tft.setTextSize(1);
-        tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
+        tft.setTextColor(TFT_MIDDLEGREY, TFT_DARKGREY);
         tft.setTextPadding(0);
         tft.drawString("bpm", 120, 133, 4);
 
-        tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-        //tft.setTextSize(1);
+        tft.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
         tft.setTextPadding(120);
         tft.drawNumber((ESpO2), 120, 175, 7);
-        tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
-        //tft.setTextSize(1);
+        tft.setTextColor(TFT_MIDDLEGREY, TFT_DARKGREY);
         tft.drawString("SpO2%", 120, 215, 4);
 
         //int HRtemp = particleSensor.readTemperature();
@@ -94,6 +107,7 @@ void readHRO2()
 
       }
     }
+    delay(5);
     particleSensor.shutDown();       // this runs Once after button is released
     tft.fillScreen(TFT_BLACK);
     staticGFX();

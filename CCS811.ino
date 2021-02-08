@@ -1,6 +1,9 @@
 #include <pgmspace.h>
 
-void printCCS811() {
+void readCCS811() {
+
+//myCCS811.setDriveMode(0); // 0=idle, 1=1sec, 2=10sec, 3=60sec, 4=RAW
+
 
   if (myCCS811.checkForStatusError() > 0) {                         //// CCS811 Error Check LIVE no beeping
     CCS811Core::status returnCode = myCCS811.begin();
@@ -11,18 +14,22 @@ void printCCS811() {
     switch ( returnCode )
     {
       case CCS811Core::SENSOR_ID_ERROR: {
-          tft.print("ID");
+          tft.print("ID/LowV");
           break;
         }
       case CCS811Core::SENSOR_I2C_ERROR: {
-          tft.print("I2C/PWR");
+          tft.print("I");
+          tft.setTextSize(1);
+          tft.print("2");
+          tft.setTextSize(2);
+          tft.print("C/LowV");
           break;
         }
       case CCS811Core::SENSOR_INTERNAL_ERROR: {
           uint8_t error = myCCS811.getErrorRegister();
           if ( error == 0xFF ) //comm error
           {
-            tft.print("I2C");
+            tft.print("Itrnl");
           }
           else
           {
@@ -43,18 +50,17 @@ void printCCS811() {
   } else {
     sensorXY();
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.print("Status             ");
+    tft.print("Status         ");
   }
 
   if (myCCS811.dataAvailable())                    //// CCS811 Data Screen Print /////
   {
-
-    const int temp = myHDC1080.readTemperature() / 1.225;
-    const int tempBME = myBME280.readTempC() / 1.225;
-    const int RH = myHDC1080.readHumidity();
-    const int CO2 = myCCS811.getCO2();
-    const int TVOC = myCCS811.getTVOC();
-    const int alt = myBME280.readFloatAltitudeMeters();
+    float temp = myHDC1080.readTemperature() / 1.225;
+    float tempBME = myBME280.readTempC() / 1.225;
+    float RH = myHDC1080.readHumidity();
+    float CO2 = myCCS811.getCO2();
+    float TVOC = myCCS811.getTVOC();
+    float alt = myBME280.readFloatAltitudeMeters();
     String pressure = String(myBME280.readFloatPressure() * 0.000145038 / 714); // in ATM
     pressure.toCharArray(pressure_value, 4);
 
@@ -98,7 +104,7 @@ void printCCS811() {
       tft.setTextColor(TFT_RED, TFT_BLACK);
     }
 
-    tft.print(tempBME);
+    tft.print(tempBME, 0);
     tft.setTextSize(1);
     tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
     tft.print("o ");
@@ -106,7 +112,7 @@ void printCCS811() {
     // Print RH
     tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
     tft.setTextSize(2);
-    tft.print(RH);
+    tft.print(RH, 0);
     tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
     tft.print("%");
 
@@ -118,9 +124,9 @@ void printCCS811() {
     // tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
     // tft.print("km");
     //} else {
-    tft.print(alt);
+    tft.print(alt, 0);
     tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
-    tft.print("m");
+    tft.print("m  ");
     //}
 
     //tft.print("  Atm ");                                      // Print ATM
@@ -146,7 +152,7 @@ void printCCS811() {
       tft.setCursor(2, 87);
     }
     tft.fillRect(2, 87, 71, 22, TFT_BLACK);
-    tft.print(CO2);
+    tft.print(CO2, 0);
 
 
     tft.setCursor(113, 87);
@@ -161,6 +167,6 @@ void printCCS811() {
     }
 
     tft.fillRect(82, 87, 73, 22, TFT_BLACK);
-    tft.print(TVOC);
+    tft.print(TVOC, 0);
   }
 }
