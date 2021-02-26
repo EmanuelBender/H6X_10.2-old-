@@ -5,19 +5,33 @@ void readHRO2()
 
   bool buttonState1 = (digitalRead(tPAD1));
 
-  if (buttonState1 != lastButtonState) {
+  if (buttonState1 != lastButtonState1 && ButtonsActive == true) {
     if (buttonState1 == 1) {
-      ledcWrite(ledChannel, 0);
+
       
+      if (ta1 == true ||   // Fan Activation
+          ta2 == true ||
+          ta3 == true ||
+          ta4 == true ||
+          ta5 == true ||
+          ta6 == true ||
+          ta7 == true ||
+          current_A > current_TH)
+      {
+        digitalWrite(fan, HIGH);
+      } else {
+        digitalWrite(fan, LOW);
+      }
+
       particleSensor.wakeUp();
       tft.fillScreen(TFT_BLACK);
-      tft.drawRoundRect(20, 10, 200, 220, 10, TFT_MIDDLEGREY);
-      tft.fillRoundRect(21, 11, 198, 218, 10, TFT_DARKGREY);
+      //tft.drawRoundRect(10, 10, 220, 220, 10, TFT_MIDDLEGREY);
+      //tft.fillRoundRect(11, 11, 218, 218, 10, TFT_BLACK);
 
       int i = 0;  //                                 ======= HR + SpO2 Settings =======
       int Num = 35;             //  calculate SpO2 by this sampling interval
 
-      const byte RATE_SIZE = 7; //  Increase this for more HR averaging. 4 is good.
+      const byte RATE_SIZE = 6; //  Increase this for more HR averaging. 4 is good.
       byte rates[RATE_SIZE];
       byte rateSpot = 0;
       long lastBeat = 0;
@@ -32,14 +46,14 @@ void readHRO2()
       double sumirrms = 0;
       double sumredrms = 0;
 
-      while ((digitalRead(tPAD1)) == HIGH) {
+      while ((digitalRead(tPAD1)) == HIGH && ButtonsActive == true) {
 
         uint32_t ir, red;
         double fred, fir;
         double SpO2 = 0;          //raw SpO2 before low pass filtered
 
         particleSensor.check();                 //Check the sensor, read up to 3 samples
-
+        tft.pushImage(65, 122, 18, 18, HR18);
         while (particleSensor.available()) {    //do we have new data
           red = particleSensor.getFIFOIR();     // swap inputs for MH-ET LIVE !! red=IR, IR=red
           ir = particleSensor.getFIFORed();     // getFIFORed output IR data by MAX30102 on MH-ET LIVE breakout board
@@ -65,7 +79,9 @@ void readHRO2()
         if (checkForBeat(irValue) == true)
         {
           //We sensed a beat!
-          tone(beep, 2500, 25);
+          tft.pushImage(65, 122, 18, 18, HRgreen18);
+          tone(beep, 500, 5);
+          ledcWrite(ledChannel1, 255);
           long delta = millis() - lastBeat;
           lastBeat = millis();
 
@@ -84,20 +100,20 @@ void readHRO2()
         }
 
         tft.setTextDatum(MC_DATUM);
-        tft.setTextPadding(80);
+        tft.setTextPadding(190);
 
         tft.setTextSize(2);
-        tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
-        tft.drawNumber((beatAvg), 120, 72, 7);
+        tft.setTextColor(TFT_WHITE, TFT_BLACK);
+        tft.drawNumber(constrain(beatAvg, 40, 199), 120, 72, 7);
         tft.setTextSize(1);
-        tft.setTextColor(TFT_MIDDLEGREY, TFT_DARKGREY);
+        tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
         tft.setTextPadding(0);
         tft.drawString("bpm", 120, 133, 4);
 
-        tft.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+        tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
         tft.setTextPadding(120);
         tft.drawNumber((ESpO2), 120, 175, 7);
-        tft.setTextColor(TFT_MIDDLEGREY, TFT_DARKGREY);
+        tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
         tft.drawString("SpO2%", 120, 215, 4);
 
         //int HRtemp = particleSensor.readTemperature();
@@ -105,9 +121,9 @@ void readHRO2()
         //tft.setCursor(150, 20);
         //tft.print(HRtemp);
 
+        ledcWrite(ledChannel1, 0);
       }
     }
-    delay(5);
     particleSensor.shutDown();       // this runs Once after button is released
     tft.fillScreen(TFT_BLACK);
     staticGFX();
