@@ -4,7 +4,7 @@ All-Round Life Saver - The electronic swiss-army-knife that can do everything yo
 
 <p>by Emanuel Bender
 
-<p><b>The Idea</b> (Storytime):<br/>
+<p><b>The Idea:</b><br/>
 
 came to me after i returned from India where i had been traveling on Foot, Train and Motorbike from North to South and back. 
 Around March 2020 I was spending my time with new friends in Rishikesh, one of whom slowly got really sick, right when COVID really started in India.
