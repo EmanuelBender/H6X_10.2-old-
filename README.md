@@ -56,9 +56,8 @@ USB-C 30W Input<br/>
 USB-micro-b Backup & Data Input<br/>
 <br/>
 <b> Sensors:</b><br/>
-  8x8pc interpolated Thermal Camera<p/>
+Thermal Camera (64px interpolated) <p/>
 Heartrate, Blood Oxygen<br/>
-Body Temperature (contactless)<br/>
 UV Index (UV-A + UV-B)<br/>
 <br/>
 CO2<br/>
