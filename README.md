@@ -6,7 +6,7 @@ All-Round Life Saver - The electronic swiss-army-knife that can do everything yo
 
 <p><b>The Idea:</b><br/>
 
-came to me after i returned from India where i had been traveling on Foot, Train and Motorbike from North to South and back. 
+i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from North to South and back. 
 Around March 2020 I was spending my time with new friends in Rishikesh, one of whom slowly got really sick, right when COVID really started in India.
 We questioned bringing her to the Hospital but couldnt really tell, no doctors to find and the medicine shops gave us wrong or fake antibiotics, wich didn't help.
 So, during that time we had the need for a thermometer but couldn't find any after searching whole Tapovan.
