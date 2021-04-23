@@ -1,10 +1,10 @@
 
-<h1 style="font-family:verdana;">[H6X Station] [in development]</h1>
+<h1 style="font-family:verdana;">[H6X POD] [in development]</h1>
 - Your companion for the next Apocalypse -							
 
 <p>by Emanuel Bender
   
-//// follow the Progress Here: https://hackaday.io/project/177083-h6x-station ////
+//// follow the Progress Here: https://hackaday.io/project/177083-h6x-pod ////
 
 <p><b>The Idea:</b><br/>
 
