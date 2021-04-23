@@ -3,6 +3,8 @@
 All-Round Life Saver - The electronic swiss-army-knife that can do everything your phone can't.							
 
 <p>by Emanuel Bender
+  
+ >>>> follow the Progress Here: https://hackaday.io/project/177083-h6x-station <<<<
 
 <p><b>The Idea:</b><br/>
 
@@ -40,31 +42,37 @@ ______________________________________________________________________________
 <p><i><b> Planned (& calculated) Specs:</b></i><br/>
 <br/>
 ~21000mah Battery [1 Day High demand, 2 Days Low demand, Months on low power mode]<br/>
-Long Range 1800lm BLF Torch<br/>
-LED Diffuse Lamp 5A (75x LEDS)<br/>
-1.54" Screen<br/>
-Phone WiFi connection<br/>
+Long Range 2500lm BLF Torch<br/>
+LED Diffuse 1500lm LED (75x LEDS)<br/>
+1.54" TFT Screen<br/>
+0.48" OLED Screen <br/>
+WiFi HTML App (on LocalNetwork<br/>
 <br/>
 <b>Charging:</b><br/>
 USB-C 24W PD3.0 Output<br/>
 USB-A 24W QC3.0 Output<br/>
 5W Qi Wireless Input<br/>
-USB-C PD3.0 (4A) Input<br/>
+USB-C (4A) Input<br/>
+USB-micro-b Backup & Data Input<br/>
 <br/>
 <b> Sensors:</b><br/>
+  8x8pc interpolated Thermal Camera<p/>
 Heartrate, Blood Oxygen<br/>
 Body Temperature (contactless)<br/>
-  <br/>
+UV Index (UV-A + UV-B)<br/>
+<br/>
+CO2<br/>
+tVOC, (Air Quality Index<br/>
+<br/>
+GPS Module<br/>
 Altitude<br/>
 Pressure<br/>
 Humidity<br/>
 Temperature<br/>
-UV Index (UV-A, UV-B Sensor)<br/>
 Compass (MPU)<br/>
   <br/>
-<p>CO, CO2, NO2<br/>
-tVOC<br/>
-Hydrogen, Ethanol, Ammonia, Methane, Propane, Iso-Butane<p/>
+
+
 
 
 
