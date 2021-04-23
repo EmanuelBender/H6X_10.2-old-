@@ -4,7 +4,7 @@ All-Round Life Saver - The electronic swiss-army-knife that can do everything yo
 
 <p>by Emanuel Bender
   
- >>>> follow the Progress Here: https://hackaday.io/project/177083-h6x-station <<<<
+//// follow the Progress Here: https://hackaday.io/project/177083-h6x-station ////
 
 <p><b>The Idea:</b><br/>
 
