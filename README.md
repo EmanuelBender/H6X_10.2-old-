@@ -1,6 +1,6 @@
 
-<h1 style="font-family:verdana;">[H6X Multi Pod] [in development]</h1>
-All-Round Life Saver - The electronic swiss-army-knife that can do everything your phone can't.							
+<h1 style="font-family:verdana;">[H6X Station] [in development]</h1>
+- Your companion for the next Apocalypse -							
 
 <p>by Emanuel Bender
   
