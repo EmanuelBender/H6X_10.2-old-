@@ -52,7 +52,7 @@ WiFi HTML App (on LocalNetwork<br/>
 USB-C 24W PD3.0 Output<br/>
 USB-A 24W QC3.0 Output<br/>
 5W Qi Wireless Input<br/>
-USB-C (4A) Input<br/>
+USB-C 30W Input<br/>
 USB-micro-b Backup & Data Input<br/>
 <br/>
 <b> Sensors:</b><br/>
@@ -62,7 +62,7 @@ Body Temperature (contactless)<br/>
 UV Index (UV-A + UV-B)<br/>
 <br/>
 CO2<br/>
-tVOC, (Air Quality Index<br/>
+tVOC (total Volatile Organic Compunds - Air Quality Index)<br/>
 <br/>
 GPS Module<br/>
 Altitude<br/>
