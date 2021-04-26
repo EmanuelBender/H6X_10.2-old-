@@ -50,43 +50,4 @@ https://www.dropbox.com/sh/55ojpmb22klrcrt/AAD_1oTMBvdd2am53Xtve0X7a?dl=0 <br/>
 ______________________________________________________________________________
 <p>
 <b>if you are intersted in knowing more or joining me, write a comment.</b>
-<p>    <p/>
-
-
-<p><i><b> Planned (& calculated) Specs:</b></i><br/>
-<br/>
-~21000mah Battery [1 Day High demand, 2 Days Low demand, Months on low power mode]<br/>
-Long Range 2500lm BLF Torch<br/>
-LED Diffuse 1500lm LED (75x LEDS)<br/>
-1.54" TFT Screen<br/>
-0.48" OLED Screen <br/>
-WiFi HTML App (on LocalNetwork<br/>
-<br/>
-<b>Charging:</b><br/>
-USB-C 24W PD3.0 Output<br/>
-USB-A 24W QC3.0 Output<br/>
-5W Qi Wireless Input<br/>
-USB-C 30W Input<br/>
-USB-micro-b Backup & Data Input<br/>
-<br/>
-<b> Sensors:</b><br/>
-Thermal Camera (64px interpolated) <p/>
-Heartrate, Blood Oxygen<br/>
-UV Index (UV-A + UV-B)<br/>
-<br/>
-CO2<br/>
-tVOC (total Volatile Organic Compunds - Air Quality Index)<br/>
-<br/>
-GPS Module<br/>
-Altitude<br/>
-Pressure<br/>
-Humidity<br/>
-Temperature<br/>
-Compass (MPU)<br/>
-  <br/>
-
-
-
-
-
-
+<p> <p/>
