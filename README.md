@@ -1,12 +1,26 @@
 
 <h1 style="font-family:verdana;">[H6X POD] [in development]</h1>
-- Your companion for the next Apocalypse -							
+- Your companion for the next Apocalypse -			
 
 <p>by Emanuel Bender
   
 //// follow the Progress Here: https://hackaday.io/project/177083-h6x-pod ////
 
-<p><b>The Idea:</b><br/>
+Components:
+- ESP32
+- 1.54" 240x240 TFT Screen
+- CCS811 (BME280, HDC1080)
+- SCD30
+- VEML6075
+- AMG8833
+- MPU9250
+- MAX30105
+- DS18B20
+- INA260
+- DS3231
+- SD MicroCard Reader
+
+<p><b>The Story:</b><br/>
 
 i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from North to South and back. 
 Around March 2020 I was spending my time with new friends in Rishikesh, one of whom slowly got really sick, right when COVID really started in India.
@@ -35,7 +49,7 @@ ______________________________________________________________________________
 https://www.dropbox.com/sh/55ojpmb22klrcrt/AAD_1oTMBvdd2am53Xtve0X7a?dl=0 <br/>
 ______________________________________________________________________________
 <p>
-<b>if you are intersted in knowing more or joining in Helping me, write a comment.</b>
+<b>if you are intersted in knowing more or joining me, write a comment.</b>
 <p>    <p/>
 
 
