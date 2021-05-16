@@ -9,7 +9,9 @@
 Components:
 - ESP32
 - 1.54" 240x240 TFT Screen
-- CCS811 (BME280, HDC1080)
+- CCS811
+- BME280
+- HDC1080
 - SCD30
 - VEML6075
 - AMG8833
@@ -18,7 +20,7 @@ Components:
 - DS18B20
 - INA260
 - DS3231
-- SD MicroCard Reader
+- microSD Card Reader
 
 <p><b>The Story:</b><br/>
 
