@@ -50,7 +50,7 @@ Trying to add functionality into every last square mm while keeping it 'minimal'
 You can see all the Planning, Prototypes and Material i made 'til now here: <br/>
 ______________________________________________________________________________
 <br/>
-https://hackaday.io/project/177083-h6x-pod-in-dev <br/>
+https://hackaday.io/project/177083-h6x-pod <br/>
 https://www.dropbox.com/sh/55ojpmb22klrcrt/AAD_1oTMBvdd2am53Xtve0X7a?dl=0 <br/>
 ______________________________________________________________________________
 <p>
