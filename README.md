@@ -7,20 +7,21 @@
 //// follow the Progress Here: https://hackaday.io/project/177083-h6x-pod ////
 
 Components:
-- ESP32
-- 1.54" 240x240 TFT Screen
-- CCS811
-- BME280
-- HDC1080
-- SCD30
-- VEML6075
-- AMG8833
-- MPU9250
-- MAX30105
-- DS18B20
-- INA260
-- DS3231
-- microSD Card Reader
+<li>ESP32</li>
+<li>1.54" 240x240 TFT Screen</li>
+<li>SCD30</li>
+<li>CCS811</li>
+  <li>PA1010D</li>
+<li>BME280</li>
+<li>HDC1080</li>
+<li>VEML6075</li>
+<li>AMG8833</li>
+<li>MAX30105</li>
+<li>DS18B20</li>
+<li>INA260</li>
+<li>DS3231</li>
+<li>microSD Card Reader</li>
+  (deprecated) MPU9250
 
 <p><b>The Story:</b><br/>
 
