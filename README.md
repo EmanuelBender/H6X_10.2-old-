@@ -2,7 +2,7 @@
 <h1 style="font-family:verdana;">[H6X POD] [in development]</h1>
 - Your companion for the next Apocalypse -			
 
-<p>by Emanuel Bender
+<p>by eBender
   
 //// follow the Progress Here: https://hackaday.io/project/177083-h6x-pod ////
 
