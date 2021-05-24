@@ -1,238 +1,35 @@
 #include <pgmspace.h>
+void everyXsec() {
 
-void checkforAlarms() {
+  if (everyXsecFlag) everyXsecFlag = false;     // Code that runs every X ms - 1 SEC
+  if (millisElapsed - previousMs > everyXms) {
+    previousMs = millis();
+    everyXsecFlag = true;
 
-  Alarms(); // <-- actually checking here for critical alarms
+    Logging();
+    readUV();  // VEML6075 Combined UV-A, UV-B Readings
+    Time(timeinfo); // update Time
 
-  currentTime = millis();
-  minElapsed = currentTime / 1000 / 60; // time elapsed since boot in min
+    WiFiRSSI = WiFi.RSSI();
+    CCS811err = myCCS811.checkForStatusError();
 
-  if (criticalAlarm) {
-    tftBKL = 255;
-    analogWrite(tftPIN, tftBKL);
-    sleepTimer = 0;
-    cycleCount = 0;
-
-    tft.setTextDatum(MC_DATUM);
-    tft.setTextSize(1);
-    tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
-    tft.setTextPadding(50);
-    //tft.fillScreen(TFT_BLACK);
-    tft.fillRoundRect(40, 30, 160, 180, 5, TFT_DARKGREY);
-    tft.drawRoundRect(43, 33, 154, 174, 5, TFT_WHITE);
-
-    while (criticalAlarm) {
-      currentTime = millis();
-      wifiPrint();
-      printStatusBar();
-      Alarms();
-      cycleCount++;
-      everyXsec();
-      tft.setTextDatum(MC_DATUM);
-      tft.setTextSize(1);
-      tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
-      if ( t1 > criticalTemp ||
-           t2 > criticalTemp ||
-           t3 > criticalTemp ||
-           t4 > criticalTemp ||
-           t5 > criticalTemp ||
-           t6 > criticalTemp ||
-           t7 > criticalTemp) {
-        tft.setTextColor(TFT_RED, TFT_DARKGREY);
-        //tone(beep, 2640, 70);
-        tft.drawString("HIGH TEMP", 120, 45, 2);
-      } else {
-        tft.drawString("TEMP OK", 120, 45, 2);
-      }
-
-      tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
-      if (Volts < 6 || BatPercent > 100) {
-        tft.setTextColor(TFT_RED, TFT_DARKGREY);
-        //tone(beep, 2340, 70);
-        tft.drawString("VOLTAGE ALARM", 120, 65, 2);
-      } else {
-        tft.drawString("VOLTAGE OK", 120, 65, 2);
-      }
-      tft.drawString(String(Volts), 120, 100, 7);
-
-
-      tft.setTextColor(TFT_GOLD, TFT_DARKGREY);
-      if (Amps > currentTH) {
-        tft.setTextColor(TFT_RED, TFT_DARKGREY);
-        //tone(beep, 2000, 70);
-        tft.drawString("CURRENT ALARM", 120, 190, 2);
-      } else {
-        tft.drawString("CURRENT OK", 120, 190, 2);
-      }
-      tft.drawString(String(Amps), 120, 155, 7);
-
-      /*
-            tft.setCursor(0, 195);
-            tft.setTextSize(2);
-              printTemperature(tempProbe1); tft.print(" ");
-              printTemperature(tempProbe2); tft.print(" ");
-              printTemperature(tempProbe3); tft.println();
-              printTemperature(tempProbe4); tft.print(" ");
-              printTemperature(tempProbe5); tft.print(" ");
-              printTemperature(tempProbe6); tft.print(" ");
-              printTemperature(tempProbe7);
-      */
-      /*
-        if (cycleCount > 550) {                 // simulate powerOFF
-        analogWrite(tftPIN, 0);
-        // digitalWrite(fan, LOW);
-        // digitalWrite(powerOFF, LOW);    // EN pin for buck converter
-        //esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-        rtc_gpio_set_direction(GPIO_NUM_19, RTC_GPIO_MODE_OUTPUT_ONLY);
-        rtc_gpio_set_direction(GPIO_NUM_26, RTC_GPIO_MODE_OUTPUT_ONLY);
-        rtc_gpio_set_direction(GPIO_NUM_27, RTC_GPIO_MODE_OUTPUT_ONLY);
-        esp_sleep_enable_ext0_wakeup(GPIO_NUM_2, 1); // 1 = High, 0 = Low, 2,4,35
-        esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, 1);
-        esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 1);
-        gpio_hold_en(GPIO_NUM_19); // cutoff power EN pin
-        gpio_hold_en(GPIO_NUM_26); // blk
-        gpio_hold_en(GPIO_NUM_27); // fan
-        btStop();
-        esp_bt_controller_disable();
-        esp_sleep_enable_timer_wakeup(sleepWakeupTime * uS_TO_S_FACTOR);
-        esp_deep_sleep_start();
-        }
-      */
-      tft.setTextSize(1);
-      tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-      tft.setCursor(197, 27);
-      tft.drawRoundRect(193, 25, 55, 12, 3, TFT_MIDDLEGREY); // (xO, yO, Length, Width, Radius, color)
-      loopEndT = millis() - currentTime;
-      tft.print(1000 / loopEndT); tft.print("fps ");
-    }
-    tft.fillScreen(TFT_BLACK);
-    cycleCount = 0;
-    if (pageCount == 0) page0();
-    if (pageCount == 1) page1();
-    if (pageCount == 2) page2();
-    if (pageCount == 3) page3();
-    if (pageCount == 4) page4();
-    if (pageCount == 5) page5();
-    if (pageCount == 6) page6();
-    if (pageCount == 7) page7();
-    if (pageCount == 8) page8();
-  }
-}
-
-void Alarms() {
-  {
-    Amps = (ina260.readCurrent() / 1000);
-    if (Amps < 0) Amps = 0;
-    Volts = (ina260.readBusVoltage() / 1000);
-    Watts = (ina260.readPower());
-
-    if (ta1 == true ||           // Fan Activation when Temp Alarm or CurrentTH
-        ta2 == true ||
-        ta3 == true ||
-        ta4 == true ||
-        ta5 == true ||
-        ta6 == true ||
-        ta7 == true ||
-        Amps > currentTH)
-    {
-      FanActive = true;
-      digitalWrite(fan, HIGH);
-    } else {
-      FanActive = false;
-      digitalWrite(fan, LOW);
-    }
-
-    if (Volts < lowVoltAlarm ||
-        Volts > highVoltAlarm ||     //   Critical Alarm Enable
-        t1 > criticalTemp ||
-        t2 > criticalTemp ||
-        t3 > criticalTemp ||
-        t4 > criticalTemp ||
-        t5 > criticalTemp ||
-        t6 > criticalTemp ||
-        t7 > criticalTemp ||
-        Amps < 3 && Amps > 2) {
-      criticalAlarm = true;
-    } else {
-      criticalAlarm = false;
-    }
-
-    if (CO2 > CO2TH || TVOC > VOCTH) {
-      AirWarning = true;
-    } else {
-      AirWarning = false;
-    }
-
-    if (deepSleepActive && sleepTimer > TimeoutT + TimeoutT2 + deepSleepStart) {
+    if (deepSleepActive && !screenState) {
       gotoDeepSleep();
     }
 
-    if (ledB == 250) {  // if you want to trigger ledB fade on, set ledB = 250
-      ledB = 0;
-      while (ledB < 254) {
-        ledB++;
-        delay(1);
-        ledcWrite(ledChannel1, ledB);
-      }
+    if (Amps < -0.03) {        // is device Charging
+      chargingActive = true;
+    } else {
+      chargingActive = false;
     }
 
-    if (ledB == 1) {  // if you want to trigger ledB fade off, set ledB = 1
-      ledB = 255;
-      while (ledB > 0) {
-        ledB--;
-        delay(3);
-        ledcWrite(ledChannel1, ledB);
-      }
+    if (BatPercent < 15 || lowPowerMode) {
+      bklTimeout =   6;       // TFT Backlight Off timer in Sec
+    } else {
+      bklTimeout =   30;       // TFT Backlight Off timer in Sec
     }
 
-    /*
-      if (Volts < 6.6 && !VcheckOnce) { // forces powerSave when under x Volt
-        deepSleepActive = true;
-        setCpuFrequencyMhz(80);
-        myCCS811.setDriveMode(3); // 0=idle, 1=1sec, 2=10sec, 3=60sec, 4=RAW
-        MAX30105.shutDown();
-        myBME280.settings.runMode = 0;
-        VML.begin(false);
-        //      TFToff();
-        WiFi.disconnect(true);
-        WiFi.mode(WIFI_OFF);
-        btStop();
-        esp_bt_controller_disable();
-        ledB = 0;
-        ledcWrite(ledChannel1, ledB);
-        VcheckOnce = true;
-        pageCount = 1;
-      }
-      if (Volts > 7) VcheckOnce = false;
-    */
-  }
-}
-
-void everyXsec() {
-  if (millis() - previousMs > everyXms) {         // Code that runs every X ms ////////////// 1 SEC ////
-    previousMs = millis();
-    BatPercent = map(Volts, 6, 8.4, 0, 100);
     DTdevicecount = sensors.getDeviceCount();
-
-    WiFistatus = WiFi.status();
-    Time(timeinfo); // update Time
-    readIMU();      // MPU9250 IMU Readings
-    readCCS811();   // CCS811 Function /w error detection
-    readUV();       // VEML6075 Combined UV-A, UV-B Readings
-
-    if (loggingActive) Logging(); //         --- LOGGING ---
-
-    if (pageCount == 0 || pageCount == 1 || pageCount == 2 && screenState) {
-      printStatusBar();
-      if (pageCount == 0 && !criticalAlarm) {
-        tft.setTextSize(1);
-        tft.setTextPadding(130);
-        tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        tft.setTextDatum(MC_DATUM);
-        tft.drawString(RTCprint, 120, 120, 4);
-      }
-    }
-
     t1 = sensors.getTempC(tempProbe1);
     t2 = sensors.getTempC(tempProbe2);
     t3 = sensors.getTempC(tempProbe3);
@@ -240,6 +37,7 @@ void everyXsec() {
     t5 = sensors.getTempC(tempProbe5);
     t6 = sensors.getTempC(tempProbe6);
     t7 = sensors.getTempC(tempProbe7);
+    t8 = sensors.getTempC(tempProbe8);
     ta1 = sensors.hasAlarm(tempProbe1);
     ta2 = sensors.hasAlarm(tempProbe2);
     ta3 = sensors.hasAlarm(tempProbe3);
@@ -247,55 +45,642 @@ void everyXsec() {
     ta5 = sensors.hasAlarm(tempProbe5);
     ta6 = sensors.hasAlarm(tempProbe6);
     ta7 = sensors.hasAlarm(tempProbe7);
-
+    ta8 = sensors.hasAlarm(tempProbe8);
     sensors.requestTemperatures();
 
-    PowerLog = "";
-    PowerLog += String(BatPercent);
-    PowerLog += ", ";
-    PowerLog += String(Volts) + ", ";
-    PowerLog += String(Amps) + ", ";
-    PowerLog += String(Watts / 1000) + ", ";
+    if (fanActive) {
+      mySensVals[0] = t1;
+      mySensVals[1] = t2;
+      mySensVals[2] = t3;
+      mySensVals[3] = t4;
+      mySensVals[4] = t5;
+      mySensVals[5] = t6;
+      mySensVals[6] = t7;
+      mySensVals[7] = t8;
 
-    tempProbes = "";
-    tempProbes += String(t1) + ", ";
-    tempProbes += String(t2) + ", ";
-    tempProbes += String(t3) + ", ";
-    tempProbes += String(t4) + ", ";
-    tempProbes += String(t5) + ", ";
-    tempProbes += String(t6) + ", ";
-    tempProbes += String(t7) + ", ";
-    //tempProbes += "\r\n";
+      max_probe_temp = mySensVals[8];
+      for (idx = 1; idx < 8; idx++) {
+        if (mySensVals[idx] > max_probe_temp); max_probe_temp = mySensVals[idx]; // find biggest value
+      }
+      switch ( idx ) {
+        case 1: max_probe_idx = "Ambient LED"; break;
+        case 2: max_probe_idx = "Battery 1"; break;
+        case 3: max_probe_idx = "LED"; break;
+        case 4: max_probe_idx = "ESP32"; break;
+        case 5: max_probe_idx = "Power Mgmt 1"; break;
+        case 6: max_probe_idx = "Power Mgmt 2"; break;
+        case 7: max_probe_idx = "Battery 2"; break;
+        case 8: max_probe_idx = "Power Bus"; break;
+      }
+      high_temp_message = max_probe_idx + " is at " + max_probe_temp + " C";
+    }
+
+
+    if (loggingActive) {
+      tempProbes = "";
+      tempProbes += String(t1) + ", ";
+      tempProbes += String(t2) + ", ";
+      tempProbes += String(t3) + ", ";
+      tempProbes += String(t4) + ", ";
+      tempProbes += String(t5) + ", ";
+      tempProbes += String(t6) + ", ";
+      tempProbes += String(t7) + ", ";
+    }
+
+    if (tempAlarm || powerAlarm) {
+      smlICON("C");    // "C"
+    } else if (chargingActive) {
+      smlCHRG();
+    } else {
+      switch ( pageCount ) {
+        case 0:  smlCarousel(); break;
+        case 1:  smlCarousel(); break; // smlICON("L"); break; // "L" settings icon
+        case 2:  smlICON("B"); break; // SD icon
+        case 3:  smlPRNT2(String(Volts), String(Amps), 0); break;
+        case 4:  smlPRNT2(String(co2SCD, 0), String(co2SMPL), 0); break;
+        case 5:  smlCarousel(); break;
+        case 6:  smlPRNT(String(co2SCD, 0), "CO2", 0); break; // "B"
+        case 7:  smlPRNT(String(tvocCCS), "VOC", 0); break;
+        case 8:  break; // is being handled by the page
+        case 9:  smlPRNT(String(beatAvg), "bpm", 0); break;
+      }
+    }
+    everyX = millis() - previousMs;
+  }
+}
+
+/*
+   smlCarousel();
+   smlPRNT2(String(Volts), String(Amps), 0);
+   smlPRNT(String(beatAvg), "bpm", 0);
+   smlPRNT2(String(co2SCD, 0), String(co2SMPL), 0);
+   smlPRNT(String(co2SCD, 0), "CO2", 0);
+   smlPRNT(String(tvocCCS), "VOC", 0);
+*/
+
+void checkforAlarms() {
+
+  millisElapsed = millis();
+
+  Warnings();     // updating Warnings & triggering Alarms
+  //   readIMU();      // MPU9250 IMU Readings and Step Counter
+
+  if (alarmEnable && powerAlarm || tempAlarm) {
+    cycleCount = 0;
+    tft.fillScreen(TFT_BLACK);
+    tft.setTextPadding(152);
+    MAX30105.shutDown();
+    TFTon();
+
+    tft.fillRoundRect(40, 30, 160, 180, 12, TFT_DARKGREY);
+    tft.drawRoundRect(43, 33, 154, 174, 12, TFT_WHITE);
+
+    while (alarmEnable && powerAlarm || tempAlarm) {
+      millisElapsed = millis();
+      Warnings();
+      wifiPrint();
+      everyXsec();
+      printStatusBar();
+      TFTon();
+
+      cycleCount++;
+      if (cycleCount > 100) gotoDeepSleep();      // simulate powerOFF while critical alarm
+
+      if (cycleCount % 5 == 0) {
+        tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 105, 10, TFT_BLACK);
+        tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 75, 10, TFT_RED);
+        tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 45, 10, TFT_BLACK);
+        ledB = 200;
+        ledcWrite(1, ledB);
+        tone(beepPin, 2600, 80);
+      } else {
+        tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 105, 10, TFT_RED);
+        tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 75, 10, TFT_BLACK);
+        tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 45, 10, TFT_RED);
+        ledB -= 50;
+      }
+
+      tft.setTextDatum(MC_DATUM);
+      tft.setTextSize(1);
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      tft.drawNumber(100 - cycleCount, TFT_WIDTH - 20, TFT_HEIGHT - 10, 4);
+      tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
+
+      if (tempAlarm) {                             // High Temp Alarm Display
+        tft.setTextColor(TFT_RED, TFT_DARKGREY);
+        if (!silentMode) tone(beepPin, 2640, 70);
+        tft.drawString("TEMP ALARM", TFT_WIDTH / 2, 45, 2);
+      } else {
+        tft.drawString("TEMP OK", TFT_WIDTH / 2, 45, 2);
+      }
+
+      tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
+      if (powerAlarm) {
+        tft.setTextColor(TFT_RED, TFT_DARKGREY);
+        if (!silentMode) tone(beepPin, 2340, 70);
+        tft.drawString("VOLTAGE ALARM", TFT_WIDTH / 2, 65, 2);
+      } else {
+        tft.drawString("VOLTAGE OK", TFT_WIDTH / 2, 65, 2);
+      }
+      tft.drawString(String(Volts), TFT_WIDTH / 2, 100, 7);
+
+      tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
+      if (Amps > ampsFanTH) {
+        tft.setTextColor(TFT_RED, TFT_DARKGREY);
+        if (!silentMode) tone(beepPin, 2000, 70);
+        tft.drawString("CURRENT ALARM", TFT_WIDTH / 2, 190, 2);
+      } else {
+        tft.drawString("CURRENT OK", TFT_WIDTH / 2, 190, 2);
+      }
+      tft.drawString(String(Amps), TFT_WIDTH / 2, 155, 7);
+
+      tft.setCursor(0, 63);
+      tft.setTextSize(2);
+      printTemperature(tempProbe1); tft.println(" ");
+      printTemperature(tempProbe2); tft.println(" ");
+      printTemperature(tempProbe3); tft.println(" ");
+      printTemperature(tempProbe4); tft.println(" ");
+      printTemperature(tempProbe5); tft.println(" ");
+      printTemperature(tempProbe6); tft.println(" ");
+      printTemperature(tempProbe7); tft.println(" ");
+      printTemperature(tempProbe8); tft.println(" ");
+
+      tft.setTextSize(1);
+      tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+      tft.setCursor(197, 25);
+      tft.drawRoundRect(193, 23, 55, 12, 3, TFT_MIDDLEGREY); // (xO, yO, Length, Width, Radius, color)
+      FPS = millis() - millisElapsed;
+      tft.print(1000 / FPS); tft.print("fps ");
+    }
+    tft.fillScreen(TFT_BLACK);
+    cycleCount = 0;
+    switch ( pageCount ) {
+      case 0: page0();
+      case 1: page1();
+      case 2: page2();
+      case 3: page3();
+      case 4: page4();
+      case 5: page5();
+      case 6: page6();
+      case 7: page7();
+      case 8: page8();
+      case 9: page9();
+    }
+  }
+}
+
+void notification(String line1, String line2, bool notiFlag, byte alarmType, long int tS) {
+
+  if (notiFlag) {
+    tft.setTextDatum(TL_DATUM);
+    tft.setTextPadding(180);
+    tft.setTextSize(1);
+    TFTon();
+
+    if (notiY <= 19 && millisElapsed - tS < 3000) {
+      notiY = notiY + 4;
+      tft.fillRoundRect(10, notiY - 4, 220, 10, 8, TFT_BLACK);
+      tft.fillRoundRect(10, notiY, 220, 60, 8, TFT_DARKGREY);
+      tft.setTextColor(TFT_WHITE);
+      tft.drawString(line1, 20, notiY + 22, 2);
+      tft.drawString(line2, 20, notiY + 38, 2);
+      switch ( alarmType ) {
+        case 0: drawBmp(SPIFFS, "/inactive12.bmp", 18, notiY + 7); break;
+        case 1: drawBmp(SPIFFS, "/warnRoundW12.bmp", 19, notiY + 6); break;
+        case 2: drawBmp(SPIFFS, "/warnRoundY12.bmp", 19, notiY + 6); break;
+        case 3: drawBmp(SPIFFS, "/warnRoundR12.bmp", 19, notiY + 6); break;
+      }
+    } else if (notiY == 20 && millisElapsed - tS < 3000) {
+      tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
+      tft.drawString(line1, 20, notiY + 22, 2);
+      tft.drawString(line2, 20, notiY + 38, 2);
+      switch ( alarmType ) {
+        case 0: drawBmp(SPIFFS, "/inactive12.bmp", 18, notiY + 7); break;
+        case 1: drawBmp(SPIFFS, "/warnRoundW12.bmp", 19, notiY + 6); break;
+        case 2: drawBmp(SPIFFS, "/warnRoundY12.bmp", 19, notiY + 6); break;
+        case 3: drawBmp(SPIFFS, "/warnRoundR12.bmp", 19, notiY + 6); break;
+      }
+    } else if (millisElapsed - tS > 3000) {
+      if (notiY >= -60) {
+        notiY = notiY - 4;
+        tft.fillRoundRect(10, notiY + 50, 220, 20, 8, TFT_BLACK);
+        tft.fillRoundRect(10, notiY, 220, 60, 8, TFT_DARKGREY);
+        tft.setTextColor(TFT_WHITE);
+        tft.drawString(line1, 20, notiY + 22, 2);
+        tft.drawString(line2, 20, notiY + 38, 2);
+        switch ( alarmType ) {
+          case 0: drawBmp(SPIFFS, "/inactive12.bmp", 18, notiY + 7); break;
+          case 1: drawBmp(SPIFFS, "/warnRoundW12.bmp", 19, notiY + 6); break;
+          case 2: drawBmp(SPIFFS, "/warnRoundY12.bmp", 19, notiY + 6); break;
+          case 3: drawBmp(SPIFFS, "/warnRoundR12.bmp", 19, notiY + 6); break;
+        }
+
+        if (notiY <= -60) {
+          if (nFanFlag) nFanFlag = false;
+          if (nAirFlag) nAirFlag = false;
+          if (nTempFlag) nTempFlag = false;
+          if (nLedFlag) nLedFlag = false;
+          if (nWetFlag) nWetFlag = false;
+          notiOn = false;
+
+          switch ( pageCount ) {
+            case 0: page0();
+            case 1: page1();
+            case 2: page2();
+            case 3: page3();
+            case 4: page4();
+            case 5: page5();
+            case 6: page6();
+            case 7: page7();
+            case 8: page8();
+            case 9: page9();
+          }
+        }
+      }
+    }
+  }
+}
+
+void notiWarnings() {
+
+  if (fanActive && millisElapsed - notiTimestampF > 60010) { // Rising Edge
+    notiTimestampF = millisElapsed;
+    tone(beepPin, 1400, 3);
+    nFanFlag = true;
+  }
+
+  if (airWarning && millisElapsed - notiTimestampA > 20010) {
+    notiTimestampA = millisElapsed;
+    tone(beepPin, 1400, 3);
+    nAirFlag = true;
+  }
+
+  //  if (tempAlarm && millisElapsed - notiTimestampT > 20010) {
+  //    notiTimestampT = millisElapsed;
+  //    tone(beepPin, 1400, 3);
+  //    nTempFlag = true;
+  //  }
+
+  if (ledBon && millisElapsed - notiTimestampL > 60010) {
+    notiTimestampL = millisElapsed;
+    tone(beepPin, 1400, 3);
+    nLedFlag = true;
+  }
+
+  if (wetAlarm && millisElapsed - notiTimestampW > 10010) {
+    notiTimestampW = millisElapsed;
+    tone(beepPin, 1400, 3);
+    nWetFlag = true;
+  }
+
+  if (nFanFlag || nAirFlag || nTempFlag || nLedFlag || nWetFlag) {
+    notiOn = true;
+  }
+
+  notification("High Temperature Detected", high_temp_message, nFanFlag, 1, notiTimestampF);
+  notification("Air Quality Warning", "Index: " + String(AirQI), nAirFlag, 2, notiTimestampA);
+  notification("LED is at " + String(map(ledB, 0, 255, 0, 100)) + "%  ", "LED Temp: " + String(t4) + " C", nLedFlag, 0, notiTimestampL);
+  notification("Water Ingress Detected", "SHUT OFF device immediately!!!", nWetFlag, 3, notiTimestampW);
+  //  notification("Temperature", "", nTempFlag, 3, notiTimestampT);
+}
+
+
+void Warnings() {
+
+  readINA260();
+
+  if (t1 > tA1 || t2 > tA2 || t3 > tA3 || t4 > tA4 || t5 > tA5 || t6 > tA6 || t7 > tA7 || t8 > tA8 ||
+      Amps > ampsFanTH ||     // Fan Activation when Temp Warning or CurrentTH
+      chargingActive ||
+      tempBME > 45 ||
+      tempSCD > 45) {
+    fanActive = true;
+    digitalWrite(fan, HIGH);
+  } else {
+    fanActive = false;
+    digitalWrite(fan, LOW);
+  }
+
+  if (humidSCD > 95 || dewPoint > 50) {
+    wetAlarm = true;
+  } else {
+    wetAlarm = false;
+  }
+
+  if (ta1 || ta2 || ta3 || ta4 || ta5 || ta6 || ta7 || ta8) {  // critical temp alarms
+    tempAlarm = true;
+  } else {
+    tempAlarm = false;
+  }
+
+  if (Volts < lowVoltAlarm || Volts > highVoltAlarm || Amps > 8 && Amps < 15) {  //   Critical Temp & overCurrent Alarm Enable
+    powerAlarm = true;
+  } else {
+    powerAlarm = false;
+  }
+
+  if (AirQI > 3) {     //   Critical Air Quality
+    airWarning = true;
+  } else {
+    airWarning = false;
+  }
+
+  if (ledBon) {  // if you want to trigger ledB fade on, set ledB = 250
+    if (ledB < 255) {
+      ledB += 15;
+      if (ledB > 240) ledB = 255;
+      ledcWrite(1, ledB);
+    }
+  }
+
+  if (!ledBon) {  // if you want to trigger ledB fade off, set ledB = 1
+    if (ledB > 0) {
+      ledB -= 15;
+      if (ledB < 15) ledB = 0;
+      ledcWrite(1, ledB);
+    }
+  }
+}
+
+void smlCarousel() {
+  switch ( count ) {
+    case 0 ... 3: smlPRNT(String(BatPercent) + "%", "BATTERY", 0); break;
+    case 4 ... 6: smlPRNT(String(tempSCD, 1), "Celsius", 0); break;
+    case 7 ... 9: smlPRNT(String(UVI), "UV", 0); break;
+    case 10 ... 12: smlPRNT(String(steps), "STEPS", 0); break;
+    case 13 ... 15: smlPRNT(String(AirQI), "AirQI", 0); break;
+    case 16 ... 20: smlPRNT2(String(co2SCD), String(co2CCS), 0); break;
+    default: count = 0; break;
+  }
+  count++;
+}
+
+void smlPRNT(String sensor, const char* label, int x) { // sml print data
+  u8g2.clearBuffer();     // clear the internal memory
+  sensor.toCharArray(charArr, 6);
+
+  u8g2.setFont(u8g2_font_logisoso22_tf);
+  u8g2.drawStr(u8g2.getUTF8Width(charArr) / 2 + 32 + x, 8, charArr);
+
+  u8g2.setFont(u8g2_font_chroma48medium8_8r); // choose a suitable font
+  u8g2.drawStr(u8g2.getUTF8Width(label) / 2 + 32, 0, label); // write something to the internal memory
+
+  u8g2.sendBuffer();     // transfer internal memory to the display
+}
+
+void smlPRNT2(String val1, String val2, int x) {
+  u8g2.clearBuffer();     // clear the internal memory
+  val1.toCharArray(charArr, 5);
+
+  u8g2.setFont(u8g2_font_logisoso18_tn);
+  u8g2.drawStr(u8g2.getUTF8Width(charArr) / 2 + 32 + x, 13, charArr); // write something to the internal memory
+
+  val2.toCharArray(charArr, 5);
+
+  u8g2.setFont(u8g2_font_helvR10_tn);
+  u8g2.drawStr(u8g2.getUTF8Width(charArr) / 2 + 32, 0, charArr); // write something to the internal memory
+
+  u8g2.sendBuffer();     // transfer internal memory to the display
+}
+
+
+void smlCHRG() {
+  //  tft.drawNumber(count, 20, 50, 2);
+  u8g2.clearBuffer();     // clear the internal memory
+  u8g2.setFont(u8g2_font_battery19_tn); // 8 x 19
+
+  if (count == 1) {
+    u8g2.drawStr(37, 6, "0"); count++;
+  } else if (count == 2) {
+    u8g2.drawStr(37, 6, "1"); count++;
+  } else if (count == 3) {
+    u8g2.drawStr(37, 6, "2"); count++;
+  } else if (count == 4) {
+    u8g2.drawStr(37, 6, "3"); count++;
+  } else if (count == 5) {
+    u8g2.drawStr(37, 6, "4"); count++;
+  } else if (count >= 6) {
+    u8g2.drawStr(37, 6, "5");
+    switch (BatPercent) {
+      case 0 ... 20: count = 1; break;
+      case 21 ... 40: count = 2; break;
+      case 41 ... 60: count = 3; break;
+      case 61 ... 80: count = 4; break;
+      case 81 ... 100: count = 5; break;
+    }
+  }
+  u8g2.sendBuffer();
+}
+
+void smlICON(const char *message) {
+  u8g2.clearBuffer();     // clear the internal memory
+
+  u8g2.setFont(u8g2_font_open_iconic_embedded_4x_t);
+  u8g2.drawStr(u8g2.getUTF8Width(message) / 2 + 32, 0, message);
+
+  u8g2.sendBuffer();
+}
+
+void gotoDeepSleep() {
+  preferences.begin("my - app", false);
+  preferences.putUInt("steps", steps); // Store the counter to the Preferences
+  preferences.end();
+
+  Wire.beginTransmission(0x69);   //  AMG8833 Modes   0x00 - Normal, 0x10 - Sleep, 0x20 - 60sec, 0x21 - 10sec
+  Wire.write(0x00);   // Register
+  Wire.write(0x10);   // Value to Register
+  Wire.endTransmission();
+
+  ledcWrite(1, 0);
+  TFToff();
+  u8g2.clearBuffer();
+  u8g2.sleepOn();
+
+  ina260.setAveragingCount(INA260_COUNT_128); // 128 * 8.2ms = 1.05sec
+  ina260.setVoltageConversionTime(INA260_TIME_8_244_ms); // 140_us, 204_us, 332_us, 558_us, 1_1_ms,
+  ina260.setCurrentConversionTime(INA260_TIME_8_244_ms);
+  //  ina260.setMode(INA260_MODE_SHUTDOWN);
+  myCCS811.setDriveMode(0); // IDLE
+  scd30.StopMeasurement();
+  MAX30105.shutDown();
+  myBME280.setMode(0);
+  VML.shutdown();
+  //  rtc_gpio_init(GPIO_NUM_17); //initialize the RTC GPIO port
+  //  rtc_gpio_init(GPIO_NUM_27); //initialize the RTC GPIO port
+  //  rtc_gpio_init(GPIO_NUM_26); //initialize the RTC GPIO port
+  //  rtc_gpio_hold_dis(GPIO_NUM_17); //disable hold before setting the level
+  //  rtc_gpio_hold_dis(GPIO_NUM_27); //disable hold before setting the level
+  //  rtc_gpio_hold_dis(GPIO_NUM_26); // disable hold before setting the level
+  //  rtc_gpio_set_level(GPIO_NUM_17, LOW); //set high/low
+  //  rtc_gpio_set_level(GPIO_NUM_26, HIGH); //set high/low
+  //  rtc_gpio_set_level(GPIO_NUM_27, HIGH); //set high/low
+  //  rtc_gpio_set_direction(GPIO_NUM_17, RTC_GPIO_MODE_INPUT_ONLY);
+  //  rtc_gpio_set_direction(GPIO_NUM_27, RTC_GPIO_MODE_INPUT_ONLY);
+  //  rtc_gpio_set_direction(GPIO_NUM_26, RTC_GPIO_MODE_INPUT_ONLY);
+
+  rtc_gpio_hold_en(GPIO_NUM_17); // led
+  rtc_gpio_hold_en(GPIO_NUM_27); // tftBLK
+  rtc_gpio_hold_en(GPIO_NUM_26); // fan
+  //  gpio_deep_sleep_hold_en();
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  //  btStop();
+  //  esp_bt_controller_disable();
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, 1); // 1 = High, 0 = Low, 2,4,35
+  //  if (powerAlarm) sleepWakeupTime += (3600 * uS_TO_S_FACTOR);
+  esp_sleep_enable_timer_wakeup(sleepWakeupTime * uS_TO_S_FACTOR);
+  esp_deep_sleep_start();
+}
+
+void TFToff() {
+  screenState = 0;
+  checkScreenState();
+}
+
+void TFTon() {
+  lastWake = millisElapsed;
+  screenState = 1;
+  checkScreenState();
+}
+
+void checkScreenState() {
+
+  sleepTimer = (millisElapsed - lastWake) / 1000;
+  if (sleepTimer > bklTimeout) screenState = 0;
+
+  if (screenState) {
+    if (tftBKL < 255) {
+      tftBKL += 8;
+      if (tftBKL > 245) tftBKL = 255;
+      analogWrite(tftPIN, tftBKL);
+    }
+  } else if (tftBKL > 1) {
+    tftBKL -= 6;
+    if (tftBKL < 12) tftBKL = 0;
+    analogWrite(tftPIN, tftBKL);
   }
 }
 
 
-void gotoDeepSleep() {
-  analogWrite(tftPIN, 0);
-  myCCS811.setDriveMode(0); // IDLE
-  MAX30105.shutDown();
-  myBME280.settings.runMode = 1;
-  ina260.setMode(INA260_MODE_SHUTDOWN);
-  VML.begin(false);
-  //    rtc_gpio_init(GPIO_NUM_27); //initialize the RTC GPIO port
-  //    rtc_gpio_init(GPIO_NUM_26); //initialize the RTC GPIO port
-  //    rtc_gpio_hold_dis(GPIO_NUM_27); //disable hold before setting the level
-  //    rtc_gpio_hold_dis(GPIO_NUM_26); // disable hold before setting the level
-  //    rtc_gpio_set_level(GPIO_NUM_27, LOW); //set high/low
-  //    rtc_gpio_set_level(GPIO_NUM_26, LOW); //set high/low
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_2, 1); // 1 = High, 0 = Low, 2,4,35
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_4, 1);
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 1);
-  rtc_gpio_set_direction(GPIO_NUM_17, RTC_GPIO_MODE_INPUT_ONLY);
-  rtc_gpio_set_direction(GPIO_NUM_27, RTC_GPIO_MODE_INPUT_ONLY);
-  rtc_gpio_set_direction(GPIO_NUM_26, RTC_GPIO_MODE_INPUT_ONLY);
-  gpio_hold_en(GPIO_NUM_17); // led
-  gpio_hold_en(GPIO_NUM_27); // tftBLK
-  gpio_hold_en(GPIO_NUM_26); // fan
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  btStop();
-  esp_bt_controller_disable();
-  esp_sleep_enable_timer_wakeup(sleepWakeupTime * uS_TO_S_FACTOR);
-  esp_deep_sleep_start();
+void printStatusBar() {
+
+  drawBmp(SPIFFS, "/batLine.bmp", batX, 2);
+
+  if (lowPowerMode) {
+    TFT_BATCOLOR = TFT_YELLOW;
+  } else if (chargingActive) {
+    TFT_BATCOLOR = TFT_GREEN;
+  } else {
+    TFT_BATCOLOR = TFT_WHITE;
+  }
+
+  if (BatPercent > 90) {
+    tft.fillRect(batX + 1, 7, 9, 2, TFT_BATCOLOR);
+  } else if (BatPercent < 90 && BatPercent > 80) {
+    tft.fillRect(batX + 1, 6, 8, 4, TFT_BATCOLOR);
+  } else if (BatPercent < 80 && BatPercent > 70) {
+    tft.fillRect(batX + 1, 6, 7, 4, TFT_BATCOLOR);
+  } else if (BatPercent < 70 && BatPercent > 60) {
+    tft.fillRect(batX + 1, 6, 6, 4, TFT_BATCOLOR);
+  } else if (BatPercent < 60 && BatPercent > 50) {
+    tft.fillRect(batX + 1, 6, 5, 4, TFT_BATCOLOR);
+  } else if (BatPercent < 50 && BatPercent > 40) {
+    tft.fillRect(batX + 1, 6, 4, 4, TFT_BATCOLOR);
+  } else if (BatPercent < 40 && BatPercent > 30) {
+    tft.fillRect(batX + 1, 6, 3, 4, TFT_BATCOLOR);
+  } else if (BatPercent < 30 && BatPercent > 20) {
+    tft.fillRect(batX + 1, 6, 2, 4, TFT_BATCOLOR);
+  } else if (BatPercent < 20 && BatPercent > 10) {
+    if (!chargingActive) TFT_BATCOLOR = TFT_ORANGE;
+    tft.fillRect(batX + 1, 6, 2, 4, TFT_BATCOLOR);
+  } else if (BatPercent < 10 && BatPercent > 3) {
+    if (!chargingActive) TFT_BATCOLOR = TFT_RED;
+    tft.fillRect(batX + 1, 6, 1, 4, TFT_BATCOLOR);
+  } else {
+  }
+
+  if (pageCount == 3) { // print minElapsed & Lamp Icon
+    tft.setTextColor(TFT_CYAN, TFT_BLACK);
+    tft.setTextPadding(30);
+    tft.setTextSize(1);
+    tft.setTextDatum(BL_DATUM);
+    tft.drawString(String(minElapsed) + "min", 0, TFT_HEIGHT, 2);
+  }
+  if (pageCount == 3 || pageCount == 5) {
+    if (ledBon && pageCount == 5) {
+      drawBmp(SPIFFS, "/lampon.bmp", 2, 18);
+    } else if (!ledBon && pageCount == 5) {
+      drawBmp(SPIFFS, "/lamp.bmp", 2, 18);
+    }
+  }
+
+  if (WiFistatus == 3) {
+    if (WiFiRSSI > -60) {
+      tft.pushImage(wifiX, 2, 12, 12, Wifi12);
+    } else if (WiFiRSSI < -60 && WiFiRSSI > -80)   {
+      tft.pushImage(wifiX, 2, 12, 12, WifiLow12);
+    } else {
+      tft.pushImage(wifiX, 2, 12, 12, WifiLower12);
+    }
+  } else if (WiFistatus == 6 || WiFistatus == 255) {
+    tft.pushImage(wifiX, 2, 12, 12, WifiOff12);
+  } else if (WiFistatus == 0) {
+    if (WiFiRSSI > -60) {
+      tft.pushImage(wifiX, 2, 12, 12, Wifi12);
+    } else if (WiFiRSSI < -60 && WiFiRSSI > -80)   {
+      tft.pushImage(wifiX, 2, 12, 12, WifiLow12);
+    } else {
+      tft.pushImage(wifiX, 2, 12, 12, WifiLower12);
+    }
+  } else {
+    tft.pushImage(wifiX, 2, 12, 12, WifiIdle12);
+  }
+
+  if (silentMode) {
+    drawBmp(SPIFFS, "/soundOff12.bmp", 2, 2);
+    //    tft.pushImage(60, 2, 12, 12, sleep12);
+    //    if (SDpresent) drawBmp("/UI/sleep12.bmp", 60, 2);   // 24bit
+  } else {
+    drawBmp(SPIFFS, "/soundOn12.bmp", 2, 2);
+    //    tft.fillRect(60, 2, 12, 12, TFT_BLACK);
+  }
+
+  if (SDpresent) {
+    drawBmp(SPIFFS, "/sd12.bmp", 20, 2);
+    //    tft.pushImage(3, 2, 12, 12, sd13);
+  } else {
+    tft.fillRect(20, 2, 12, 12, TFT_BLACK);
+  }
+
+  if (loggingActive) {
+    drawBmp(SPIFFS, "/logging12.bmp", 38, 2);
+    //    tft.pushImage(23, 2, 12, 12, logging12);
+    //    if (SDpresent) drawBmp("/UI/logging12.bmp", 24, 2);   // 24bit
+  } else {
+    tft.fillRect(38, 2, 12, 12, TFT_BLACK);
+  }
+
+  if (fanActive) {
+    drawBmp(SPIFFS, "/fan12.bmp", 56, 2);
+    //    tft.pushImage(44, 2, 12, 12, fan12);
+    //    if (SDpresent) drawBmp("/UI/fan12.bmp", 44, 2);   // 24bit
+  } else {
+    tft.fillRect(56, 2, 12, 12, TFT_BLACK);
+  }
+
+  if (deepSleepActive) {
+    drawBmp(SPIFFS, "/sleep12.bmp", 75, 2);
+    //    tft.pushImage(60, 2, 12, 12, sleep12);
+    //    if (SDpresent) drawBmp("/UI/sleep12.bmp", 60, 2);   // 24bit
+  } else {
+    tft.fillRect(75, 2, 12, 12, TFT_BLACK);
+  }
+
+  if (airWarning) {
+    drawBmp(SPIFFS, "/warnRoundR12.bmp", 2, 42);
+    //    tft.pushImage(3, 22, 12, 12, warn12);
+    //    if (SDpresent) drawBmp(SD, "/UI/warn12.bmp", 3, 22);
+  } else {
+    tft.fillRect(2, 42, 12, 12, TFT_BLACK);
+  }
 }

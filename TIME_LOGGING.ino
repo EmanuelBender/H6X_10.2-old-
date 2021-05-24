@@ -1,14 +1,28 @@
 #include <pgmspace.h>
 
 void Time(tm localTime) {
-
+  minElapsed = millisElapsed / 1000 / 60; // time elapsed since boot in min
+  secElapsed = millisElapsed / 1000;
   DateTime now = rtc.now();
-  yr = now.year();
+  tempRTC = rtc.getTemperature();
+
+  yr = now.year();    // RTC time
   mo = now.month();
   da = now.day();
   hr = now.hour();
   mi = now.minute();
   se = now.second();
+  dow = now.dayOfTheWeek();
+  /*
+    yr = localTime.tm_year - 100;  // ESP system Time
+    mo = localTime.tm_mon + 1;
+    da = localTime.tm_mday;
+    hr = localTime.tm_hour;
+    mi = localTime.tm_min;
+    se = localTime.tm_sec;
+    dow = now.dayOfTheWeek();
+  */
+
 
   RTCdate = "/" + String(da) + "." + String(mo) + "." + String(yr) + ".txt";
   RTCdate.toCharArray(LogFile, 16);
@@ -49,47 +63,61 @@ void Time(tm localTime) {
 
 
 void Logging() {
+  if (loggingActive && SDpresent) {
+    //  readLogFile(SD, LogFile);
+    // "\nTime, Bat %, Load V, Current, Watts, t1, t2, t3, t4, t5, t6, t7, CO2, tVOC, Temp, RH, Alt, UV, Backlight, Fan, LED, LowPower, deepSleep\n";
+    SDdata = "";
 
-  if (!SDpresent) loggingActive = false;
-  // "\nTime, Bat %, Load V, Current, Watts, t1, t2, t3, t4, t5, t6, t7, CO2, tVOC, Temp, RH, Alt, UV, Backlight, Fan, LED\n";
-  SDdata = "";
+    SDdata += RTCt;
+    SDdata += PowerLog;
+    SDdata += tempProbes;
 
-  SDdata += RTCt;
-  SDdata += PowerLog;
-  SDdata += tempProbes;
+    if (CCS811err == 0) {
+      SDdata += envData;
+    } else {
+      SDdata += "--, --, --, --, --, ";
+    }
 
-  if (CCS811err == 0) {
-    SDdata += envData;
-  } else {
-    SDdata += "--, --, --, --, --, ";
+    if (activeVML) {
+      SDdata += "--, ";
+    } else {
+      SDdata += UVIsd;
+    }
+
+    if (screenState) {
+      SDdata += "3, ";
+    } else {
+      SDdata += "0, ";
+    }
+
+    if (fanActive) {
+      SDdata += "2, ";
+    } else {
+      SDdata += "0, ";
+    }
+
+    if (ledB > 0) {
+      ledBprint = ledB / 10;
+      SDdata += ledBprint;
+      SDdata +=  ", ";
+    } else {
+      SDdata +=  "0, ";
+    }
+
+    if (lowPowerMode) {
+      SDdata += "1, ";
+    } else {
+      SDdata += "0, ";
+    }
+
+    if (deepSleepActive) {
+      SDdata += "1";
+    } else {
+      SDdata += "0";
+    }
+
+    appendFile(SD, LogFile, SDdata.c_str());
   }
-
-  if (VML.getID() > 0) {
-    SDdata += "--, ";
-  } else {
-    SDdata += UVIsd;
-  }
-
-  if (screenState) {
-    SDdata += "3, ";
-  } else {
-    SDdata += "0, ";
-  }
-
-  if (FanActive) {
-    SDdata += "2, ";
-  } else {
-    SDdata += "0, ";
-  }
-
-  if (ledB > 0) {
-    ledBprint = ledB / 10;
-    SDdata += ledBprint;
-  } else {
-    SDdata +=  "0";
-  }
-
-  if (loggingActive) appendFile(SD, LogFile, SDdata.c_str());
 }
 
 
