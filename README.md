@@ -21,8 +21,9 @@ Components:
 <li>INA260</li>
 <li>DS3231</li>
 <li>microSD Card Reader</li>
- <li>  (deprecated) MPU9250</li>
-
+<li>(deprecated) MPU9250</li>
+<br>
+<br>
 <p><b>The Story:</b><br/>
 
 i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from North to South and back. 
