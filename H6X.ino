@@ -21,14 +21,13 @@
   SCD30      - 0x61 - Nathan Seidle @ Sparkfun Electronics
   INA260     - 0x41 - Adafruit Industries
   DS3231     - 0x68 - Adafruit Industries - fork of JeeLabs RTC Library
-  // MPU9250    - 0x69 - asukiaaa Asuki Kono, kevinlhoste, josephlarralde joseph
+  MPU9250    - 0x69 - (Bus 2) - asukiaaa Asuki Kono, kevinlhoste, josephlarralde joseph
 
   Bugs/Issues:
-  ACG 8x8 Thermal cam I2C address conflicting /w MPU & RTC
 
   ========================================================================================*/
 
-#define Revision "9.9"
+#define Revision "10.0"
 
 #include <Arduino.h>
 #include <Credentials.h>
@@ -69,48 +68,49 @@
 #include <EasyButton.h>
 
 #include <U8g2lib.h>
-U8G2_SSD1306_64X32_1F_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+//U8G2_SSD1306_64X32_1F_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+U8G2_SH1106_128X32_VISIONOX_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 #include <TFT_eSPI.h>
-TFT_eSPI    tft =  TFT_eSPI(); // Invoke custom library - #include <User_Setups/Setup24_ST7789.h> in User_Setup_Select
-TFT_eSprite spr =  TFT_eSprite(&tft); // Sprite object
-TFT_eSprite dial   = TFT_eSprite(&tft); // Sprite object for dial
-TFT_eSprite needle = TFT_eSprite(&tft); // Sprite object for needle
+TFT_eSPI    tft     =  TFT_eSPI(); // Invoke custom library - #include <User_Setups/Setup24_ST7789.h> in User_Setup_Select
+TFT_eSprite spr     =  TFT_eSprite(&tft); // Sprite object
+TFT_eSprite dial    = TFT_eSprite(&tft); // Sprite object for dial
+TFT_eSprite needle  = TFT_eSprite(&tft); // Sprite object for needle
 TFT_eSprite dial2   = TFT_eSprite(&tft); // Sprite object for dial
 TFT_eSprite needle2 = TFT_eSprite(&tft); // Sprite object for needle
 TFT_eSprite dial3   = TFT_eSprite(&tft); // Sprite object for dial
 TFT_eSprite needle3 = TFT_eSprite(&tft); // Sprite object for needle
 int16_t angle;
 
-uint16_t scrollTFT = 0;
-const byte  wifiX =  205;   // status bar icon position
-const byte  batX =   222;
+uint16_t    scrollTFT = 0;
+const byte  wifiX     = 205;   // status bar icon position
+const byte  batX      = 222;
 
-byte edgeL =      5;    // static visual elements for graph page
-const byte box1Top =    5;
+byte       edgeL      = 5;    // static visual elements for graph page
+const byte box1Top    = 5;
 const byte box1Bottom = 105;
-const byte box2Top =    120;
+const byte box2Top    = 120;
 const byte box2Bottom = 220;
-const byte boxHeight =  100;
-const byte boxWidth =   230;
-const byte l = 228; // boxWidth - 2
+const byte boxHeight  = 100;
+const byte boxWidth   = 230;
+const byte l          = 228; // boxWidth - 2
 
 const byte menuPages = 9;
 byte       pageCount = 0;
-byte       menuCar = 3;
-uint8_t    mX = 95, mY;
+byte       menuCar   = 3;
+uint8_t    mX        = 95, mY;
 const byte menuSpeed = 15; // 1, 5, 15
 
 const char *icon1 = "/car/settingsR.bmp";    // Menu Icons
 const char *icon2 = "/car/systemR.bmp";
-const char *icon3 = "/car/homecube.bmp";
+const char *icon3 = "/car/homecubeR.bmp";
 const char *icon4 = "/car/tempcamR.bmp";
 const char *icon5 = "/car/heartrateR.bmp";
-const int carX1 = 10;                            // Menu Icon X 4
-const int carX2 = 55;
-const int carX3 = 100;
-const int carX4 = 145;
-const int carX5 = 190;
+const byte  carX1 = 10;                      // Menu Icon X 4
+const byte  carX2 = 55;
+const byte  carX3 = 100;
+const byte  carX4 = 145;
+const byte  carX5 = 190;
 
 
 OneWire oneWire(5); // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
@@ -125,6 +125,7 @@ DeviceAddress tempProbe7 = {0x28, 0x30, 0x14, 0x75, 0xD0, 0x01, 0x3C, 0x79};
 DeviceAddress tempProbe8 = {0x28, 0x87, 0xB1, 0x75, 0xD0, 0x01, 0x3C, 0x1A};
 int  t1, t2, t3, t4, t5, t6, t7, t8, max_probe_temp;
 bool ta1, ta2, ta3, ta4, ta5, ta6, ta7, ta8;     // critical temp flag
+int        mySensVals[8];
 const byte tA1 = 27;  // AMB    temp probes soft Alarm - Fan Activation Thresholds
 const byte tA2 = 27;  // BAT1
 const byte tA3 = 27;  // ESP
@@ -133,27 +134,29 @@ const byte tA5 = 27;  // PWR
 const byte tA6 = 27;  // BAT2
 const byte tA7 = 27;  // BUS
 const byte tA8 = 27;  // X
-String high_temp_message, max_probe_idx;
-int mySensVals[8];
-byte DTdevicecount;
+String     high_temp_message, max_probe_idx;
+byte       DTdevicecount;
 
 #define tPAD1   4         // I/O PINS
-#define tPAD2   2
-#define tPAD3   35
+#define tPAD2   19
+#define tPAD3   2
 #define beepPin 33
 #define fan     26
 //#define powerOFF 19
 #define pwmLED  17  // PWM controlled LED output
 #define tftPIN  27   // TFT backlight control
-byte tftBKL =   0;
+byte    tftBKL = 0;
 
 #define pwmfreq 20000
 #define pwmresolution 12
 byte ledB = 0;
 bool ledBon;
 
-#define SDA_PIN 21
-#define SCL_PIN 22
+#define SDA1 21
+#define SCL1 22
+//#define SDA2 31
+//#define SCL2 32
+
 //#define spiFreq 78000000            // 80Mhz max   --- HSPI, SD
 //#define SPI_FREQUENCY 78000000      // 80Mhz max   --- VSPI, TFT
 //#define SPI_READ_FREQUENCY 75000000 // 27Mhz max   --- VSPI, TFT
@@ -206,11 +209,11 @@ byte    irOffset      = 5;    // 0 - 90 , offset distance from sensor
 byte    constHRtop    = 93 - irOffset;     // HR graph constraints
 byte    constHRbottom = 90 - irOffset;
 byte    ledBrightness = 200;  // 130 - Options: 0=Off to 255=50mA
-const byte ledMode =       2;    // Options: 1 = IR only, 2 = Red + IR on MH-ET LIVE MAX30102 board
+const byte ledMode    =    2;    // Options: 1 = IR only, 2 = Red + IR on MH-ET LIVE MAX30102 board
 const int  sampleRate =    3200; // Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
 const byte sampleAverage = 32;   // Options: 1, 2, 4, 8, 16, 32 --- 16
 const int  pulseWidth =    215;  // Options: 69, 118, 215, 411       --- 118
-const int  adcRange =      16384;// Options: 2048, 4096, 8192, 16384
+const int  adcRange   =    16384;// Options: 2048, 4096, 8192, 16384
 
 const byte RATE_SIZE = 5;    //  Increase this for more HR averaging. 4 is good.
 byte       rates[RATE_SIZE];
@@ -221,14 +224,14 @@ uint8_t    beatAvg;
 
 int     lastIR = 0;
 int     lastO2 = 0;
-int     i =      0;
-int     m =      0;
-byte    Num =    10;   //  50 calculate SpO2 by this sampling interval
-double  ESpO2 =  90.0; // initial value of estimated SpO2
-double  FSpO2 =  0.7;  // filter factor for estimated SpO2
-double  frate =  0.95; // 0.95 low pass filter for IR/red LED value to eliminate AC component
+int     i      = 0;
+int     m      = 0;
+byte    Num    = 10;   //  50 calculate SpO2 by this sampling interval
+double  ESpO2  = 90.0; // initial value of estimated SpO2
+double  FSpO2  = 0.7;  // filter factor for estimated SpO2
+double  frate  = 0.95; // 0.95 low pass filter for IR/red LED value to eliminate AC component
 double  avered = 0;
-double  aveir =  0;
+double  aveir  = 0;
 double  sumirrms = 0;
 double  sumredrms = 0;
 
@@ -259,8 +262,8 @@ void     interpolate_image(float *src, uint8_t src_rows, uint8_t src_cols, float
 const byte amgNumReadings = 50;         // Samples of Thermal Cam burst Reading
 float    amgReadings[amgNumReadings];
 byte     amgreadIndex = 0;
-float    amgtotal = 0;
-double   amgaverage = 0;
+float    amgtotal     = 0;
+double   amgaverage   = 0;
 bool     burstReading;
 
 RTC_DS3231 rtc;              //  RTC
@@ -270,10 +273,10 @@ char     RTCtimeLOG[10];
 char     RTClog[12];
 uint8_t  yr, mo, da, hr, mi, se, dow;
 char     daysOfTheWeek[7][12] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-String   RTCt = "";
-String   RTCprint = "";
+String   RTCt      = "";
+String   RTCprint  = "";
 String   SDloghead = "";
-String   RTCdate = "";
+String   RTCdate   = "";
 String   ledBprint, currentLine, envData, PowerLog, tempProbes, dateString;
 
 long int previousTime, previousTime1, millisElapsed, minElapsed, secElapsed, previousMs;
@@ -313,14 +316,15 @@ byte      pCO2, pTVOC, AirQI;
 int       prevCO2, prevTVOC, tvocSMPL, co2SMPL;
 byte      fanGraph, TempGraph, RHgraph, CCS811err;
 #define   SEALEVELPRESSURE_HPA (1028.25) // sealevel Pressure Berlin
-byte  dialX = 150, dialY = 124;
-byte dial2X = 19, dial2Y = 125;
+byte      dialX = 150, dialY = 124;
+byte      dial2X = 19, dial2Y = 125;
+byte      dial3X = 84, dial3Y = 7;
 
 
 Adafruit_INA260 ina260 = Adafruit_INA260();      // INA219 current and voltage readings
 float  Amps, Volts, Watts;
 char   bat_char[4];
-char   charArr[6];
+char   charArr[8];
 int    Svolt, Bvolt, Lvolt, currA, powMW, lastpowMW;
 byte   BatPercent;
 int    TFT_BATCOLOR;
@@ -337,7 +341,7 @@ String header;
 byte   wifiNetworks;
 String wiFiName;
 
-const char *NTP_SERVER = "pool.ntp.org"; // NTP Time
+const char *NTP_SERVER = "pool.ntp.org"; // NTP Time   pool.ntp.org
 const char *TZ_INFO = "CET-1CEST,M3.5.0,M10.5.0/3"; //  CET-1CEST,M3.5.0,M10.5.0/3  ,  CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00  ,  WEST-1DWEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00
 tm timeinfo;
 time_t now;
@@ -369,7 +373,7 @@ void setup() //==================================== SETUP ======================
   createNeedle3();
   u8g2.begin();
   u8g2.clearBuffer();
-  u8g2.setFontDirection(2);
+  u8g2.setFontDirection(1);
   u8g2.setFontMode(0);
   u8g2.setFont(u8g2_font_u8glib_4_tf);
 
@@ -380,8 +384,6 @@ void setup() //==================================== SETUP ======================
   ledcAttachPin(pwmLED, 1); // ledPin, ledChannel
   ledcSetup(1, pwmfreq, pwmresolution); // ledChannel, Frequency, Resolution
 
-  //  pinMode(tPAD1, INPUT_PULLDOWN);
-  //  pinMode(tPAD2, INPUT_PULLDOWN);
   attachInterrupt(tPAD1, buttonInterrupt1, RISING);
   attachInterrupt(tPAD2, buttonInterrupt2, RISING);
 
@@ -390,9 +392,7 @@ void setup() //==================================== SETUP ======================
   button.onSequence(2, 700, doubleClick);
   button.enableInterrupt(buttonISR);
 
-  //  pinMode(tPAD3, INPUT_PULLDOWN);
   //  attachInterrupt(digitalPinToInterrupt(tPAD3), buttonInterrupt3, RISING);
-
   //  pinMode(powerOFF, OUTPUT);
   //  digitalWrite(powerOFF, HIGH);
 
@@ -401,14 +401,14 @@ void setup() //==================================== SETUP ======================
   rtc_gpio_hold_dis(GPIO_NUM_26);
   rtc_gpio_hold_dis(GPIO_NUM_27);
 
-  Wire.begin(SDA_PIN, SCL_PIN);
-  Wire.setClock(I2C_SPEED_FAST);
+  Wire.begin(SDA1, SCL1, I2C_SPEED_FAST);
+  //  Wire1.begin(SDA2, SCL2, I2C_SPEED_FAST);
 
   preferences.begin("my - app", false);
   counter = preferences.getUInt("counter", 0);    // Store the counter to the Preferences
   counter++;
   preferences.putUInt("counter", counter);
-  //  htmlRestart = preferences.getBool("htmlRestart", 0);
+  htmlRestart = preferences.getBool("htmlRestart", 0);
   steps = preferences.getUInt("steps", 0);
   preferences.end();
 
@@ -416,24 +416,25 @@ void setup() //==================================== SETUP ======================
   while (!SPIFFS.begin()) {
     delay(10);
     if (millis() - millisElapsed > 2000) {
-      u8g2.drawStr(62, 28, "SPIFFS FAILED");
+      u8g2.drawStr(120, 0, "SPIFFS FAILED");
       u8g2.sendBuffer();
       break;
     }
   }
 
-  // SCK, MISO, MOSI, CS
-  spiSD.begin(14, 25, 13, 19); // SCK, MISO, MOSI, CS
+  spiSD.begin(14, 25, 13, 15); // SCK, MISO, MOSI, CS
   spiSD.setFrequency(SPI_FREQUENCY);
-  if (SD.begin(19, spiSD, SPI_FREQUENCY)) {
+  delay(10);
+  if (SD.begin(15, spiSD, SPI_FREQUENCY)) {
     SDpresent = true;
     //    loggingActive = true;
   } else {
     SDpresent = false;
     loggingActive = false;
-    u8g2.drawStr(62, 24, "SD FAILED");
+    u8g2.drawStr(110, 0, "SD FAILED");
     u8g2.sendBuffer();
   }
+
 
   tft.setTextColor(TFT_WHITE);
   tft.setTextDatum(MC_DATUM);
@@ -492,15 +493,16 @@ void setup() //==================================== SETUP ======================
     tft.print("W "); // WiFi Failed
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
-    u8g2.drawStr(62, 20, "WIFI FAILED");
+    u8g2.drawStr(100, 0, "WIFI FAILED");
     u8g2.sendBuffer();
   }
+
 
   if (rtc.begin()) {
     time(&now);                      // RTC time
     localtime_r(&now, &timeinfo);    // ESP32 Time fromat
-    //    DateTime now = rtc.now();
-    rtc.disable32K();
+    DateTime now = rtc.now();
+    //    rtc.disable32K();
     tft.print(" ");
     activeRTC = true;
   } else {
@@ -526,12 +528,12 @@ void setup() //==================================== SETUP ======================
   tft.setTextSize(2);
   tft.setTextColor(TFT_BLACK, TFT_INDIA);
 
-  myBME280.settings.commInterface =   I2C_MODE;
-  myBME280.settings.I2CAddress =      0x76;
-  myBME280.settings.runMode =         3;       // 0 = sleep, 1 = forced, 3 = normal
-  myBME280.settings.tStandby =        5;       // 4 = 500ms, 5 = 1000ms, 0 = 0.5ms,
-  myBME280.settings.filter =          4;       // 4
-  myBME280.settings.tempOverSample =  12; // 5
+  myBME280.settings.commInterface   = I2C_MODE;
+  myBME280.settings.I2CAddress      = 0x76;
+  myBME280.settings.runMode         = 3;       // 0 = sleep, 1 = forced, 3 = normal
+  myBME280.settings.tStandby        = 5;       // 4 = 500ms, 5 = 1000ms, 0 = 0.5ms,
+  myBME280.settings.filter          = 4;       // 4
+  myBME280.settings.tempOverSample  = 12; // 5
   myBME280.settings.pressOverSample = 8;
   myBME280.settings.humidOverSample = 8;
 
@@ -553,7 +555,7 @@ void setup() //==================================== SETUP ======================
 
   if (returnCode != CCS811Core::SENSOR_SUCCESS) {
     tft.print("C ");
-    u8g2.drawStr(62, 16, "CCS811 FAILED");
+    u8g2.drawStr(90, 0, "CCS811 FAILED");
     u8g2.sendBuffer();
   } else {
     myCCS811.setDriveMode(1);
@@ -569,7 +571,7 @@ void setup() //==================================== SETUP ======================
     activeSCD = true;
   } else {
     tft.print("S3");
-    u8g2.drawStr(62, 12, "SCD30 FAILED");
+    u8g2.drawStr(80, 0, "SCD30 FAILED");
     u8g2.sendBuffer();
   }
 
@@ -580,7 +582,7 @@ void setup() //==================================== SETUP ======================
     activeMAX = true;
   } else {
     tft.print("M ");
-    u8g2.drawStr(62, 8, "MAX30105 FAILED");
+    u8g2.drawStr(70, 0, "MAX30105 FAILED");
     u8g2.sendBuffer();
   }
 
@@ -592,7 +594,7 @@ void setup() //==================================== SETUP ======================
     activeVML = true;
   } else {
     tft.print("V ");
-    u8g2.drawStr(62, 4, "VML6075 FAILED");
+    u8g2.drawStr(60, 0, "VML6075 FAILED");
     u8g2.sendBuffer();
   }
 
@@ -635,9 +637,9 @@ void setup() //==================================== SETUP ======================
   sensors.setLowAlarmTemp(tempProbe8, -15); // BUS
 
   if (myBME280.readTempC() < 0) {
-    myHDC1080.heatUp(6);
+    myHDC1080.heatUp(5);
   } else if (myBME280.readTempC() < -10) {
-    myHDC1080.heatUp(12);
+    myHDC1080.heatUp(10);
   }
 
   if (ina260.begin()) {      // INA260 begin
@@ -654,7 +656,7 @@ void setup() //==================================== SETUP ======================
     activeINA = true;
   } else {
     tft.print("I ");
-    u8g2.drawStr(62, 0, "INA260 FAILED");
+    u8g2.drawStr(50, 0, "INA260 FAILED");
     u8g2.sendBuffer();
   }
 
@@ -666,12 +668,13 @@ void setup() //==================================== SETUP ======================
     Wire.write(0x10);   // Value to Register 0x00 - Normal, 0x10 - Sleep, 0x20 - 60sec, 0x21 - 10sec
     if (Wire.endTransmission() == 0) activeAMG = true;
   } else {
-    //    u8g2.drawStr(62, 0, "AMG8833 FAILED");
-    //    u8g2.sendBuffer();
+    u8g2.drawStr(40, 0, "AMG8833 FAILED");
+    u8g2.sendBuffer();
     tft.print("A");
   }
+
   /*
-    IMU.setWire(&Wire);          // MPU9250 begin
+    IMU.setWire(&Wire1);          //  !!  MPU9250 begin, using second I2C bus (Wire1)
     if (IMU.readId(&sensorId) == 0) {
       tft.print(" ");
       IMU.beginAccel();
@@ -683,11 +686,14 @@ void setup() //==================================== SETUP ======================
     } else {
       tft.print("M");
       Serial.println("MPU9250 FAILED");
-      //    u8g 2.drawStr(62, 0, "IMU FAILED");
+      //    u8g2.drawStr(30, 0, "IMU FAILED");
       //    u8g2.sendBuffer();
     }
   */
   //  tft.print(Revision);
+  u8g2.drawStr(0, 0, "...DONE");
+  u8g2.sendBuffer();
+  u8g2.setFontDirection(0);
 
   delay(600);
   lastWake = millis();
@@ -695,31 +701,30 @@ void setup() //==================================== SETUP ======================
   //  SPIFFS.format();
 
   tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
-  tft.setCursor(96, 225);
-  tft.print(counter);
+  //  tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+  //  tft.setCursor(96, 225);
+  //  tft.print(counter);
 
   tone(beepPin, 2400, 3);
 
-  //    Serial.begin(115200);
+  //  Serial.begin(115200);
   //    delay(100);
 }
 
-// Setup Done.
 
 void loop() //=================================== VOID LOOP ========================================
 {
 
-  page0();     // Home Page
-  page1();     // Home Page
-  page2();     // System Stats, Dallas Temperature Probes & Voltage & Current
-  page3();     // AMG8833 Thermal Camera
-  page4();     // HeartRate SpO2
-  page5();     // Graph Co2, TVOC, Voltage & Current
-  page6();     // Diagnostics
-  page7();     // SD card Directory
-  page8();     // Info Page CO2
-  page9();     // Info Page TVOC
+  page0();     // Menu
+  page1();     // System Diagnostics
+  page2();     // SD card
+  page3();     // Device Stats
+  page4();     // Graphs
+  page5();     // Home Page
+  page6();     // Info Page CO2
+  page7();     // Info Page TVOC
+  page8();     // Thermal Cam
+  page9();     // HeartRate Sensor
 
 }
 //=============================================== END MAIN =========================================

@@ -54,7 +54,7 @@ void readCCS811() {
     if (!myBME280.isMeasuring()) {
       tempBME = myBME280.readTempC(); // 1.225
       altBME = constrain(myBME280.readFloatAltitudeMeters(), -999, 9999);
-      //      pressureBME = (myBME280.readFloatPressure() / 101325); // to ATM / 101325  -- Bar
+      pressureBME = (myBME280.readFloatPressure() / 101325); // to ATM / 101325  -- Bar
     }
 
     //  humidHDC = myHDC1080.readHumidity();
@@ -96,20 +96,18 @@ void readCCS811() {
         ccsT  += co2CCS;
         tvocIDX++;
       }
-      //    tvocSMPL = constrain(tvocSMPL, 0, 4000);
-      //    co2SMPL =  constrain(co2SMPL, 400, 8000);
 
       myCCS811.setEnvironmentalData(humidHDC, tempBME); // humidSCD, tempSCD
 
-      if (co2SMPL > 8000) {
-        co2SMPL = 0;
-      }
-      if (tvocSMPL > 4000) {
-        tvocSMPL = 0;
-      }
-      //    AirQI = (map(tvocCCS, 0, 1200, 0, 6) + (map(((co2SMPL + co2SCD) / 2000), 0, 5000, 0, 6))) / 2;
-      //    AirQI = map(co2SCD, 0, 4000, 0, 6);
-      AirQI = (map(tvocSMPL, 0, 900, 0, 6) + map(co2SMPL, 0, 4000, 0, 6)) / 2;
+      //      if (co2SMPL > 8000) {
+      //        co2SMPL = 0;
+      //      }
+      //      if (tvocSMPL > 4000) {
+      //        tvocSMPL = 0;
+      //      }
+      //      AirQI = (map(tvocCCS, 0, 1200, 0, 6) + (map(((co2SMPL + co2SCD) / 2000), 0, 5000, 0, 6))) / 2;
+      AirQI = map(co2SCD, 0, 5500, 0, 6);
+      //      AirQI = (map(tvocSMPL, 0, 800, 0, 6) + map(co2SCD, 400, 4000, 0, 6)) / 2;
 
       if (loggingActive) {
         envData = "";
@@ -130,13 +128,11 @@ String printSensorError() {
   switch (returnCode) {
     case CCS811Core::SENSOR_ID_ERROR:
       {
-        //        tft.print("ID / LowV");
         return "ID / LowC";
         break;
       }
     case CCS811Core::SENSOR_I2C_ERROR:
       {
-        //        tft.print("I2C / LowV");
         return "I2C / LowC";
         break;
       }
@@ -145,32 +141,29 @@ String printSensorError() {
         uint8_t error = myCCS811.getErrorRegister();
         if (error == 0xFF) { //comm error
           return "ITRNL_COMM";
-          //          tft.print("ITRNL_COMM");
         } else {
           if (error & 1 << 5)
-            tft.print("HeaterSupply");
+            return "HeaterSupply";
           if (error & 1 << 4)
-            tft.print("HeaterFault");
+            return "HeaterFault";
           if (error & 1 << 3)
-            tft.print("MaxResistance");
+            return "MaxResistance";
           if (error & 1 << 2)
-            tft.print("ModeInvalid");
+            return "ModeInvalid";
           if (error & 1 << 1)
-            tft.print("RegInvalid");
+            return "RegInvalid";
           if (error & 1 << 0)
-            tft.print("MsgInvalid");
+            return "MsgInvalid";
         }
         break;
       }
     case CCS811Core::SENSOR_GENERIC_ERROR:
       {
         return "ValueMax";
-        //        tft.print("ValueMax/Generic");
         break;
       }
     default:
       return "ok";
-      //      tft.print("ok              ");
       break;
   }
 }
@@ -180,7 +173,7 @@ void readUV() {
   //    VML.powerOn();
   //    VML.shutdown();
   if (activeVML) {
-//    UVI = VML.index();
+    UVI = VML.index();
     //  UVA = VML.uva();
     //  UVB = VML.uvb();
     VML.trigger();

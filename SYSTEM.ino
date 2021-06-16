@@ -96,13 +96,13 @@ void everyXsec() {
         case 0:  smlCarousel(); break;
         case 1:  smlCarousel(); break; // smlICON("L"); break; // "L" settings icon
         case 2:  smlICON("B"); break; // SD icon
-        case 3:  smlPRNT2(String(Volts), String(Amps), 0); break;
-        case 4:  smlPRNT2(String(co2SCD, 0), String(co2SMPL), 0); break;
+        case 3:  break; // is being handled by the page
+        case 4:  smlPRNT2(String(co2SCD), String(co2SMPL), 0); break;
         case 5:  smlCarousel(); break;
-        case 6:  smlPRNT(String(co2SCD, 0), "CO2", 0); break; // "B"
-        case 7:  smlPRNT(String(tvocCCS), "VOC", 0); break;
+        case 6:  smlPRNT(String(co2SCD), "CO2", 0, 0); break; // "B"
+        case 7:  smlPRNT(String(tvocCCS), "VOC", 0, 0); break;
         case 8:  break; // is being handled by the page
-        case 9:  smlPRNT(String(beatAvg), "bpm", 0); break;
+        case 9:  smlPRNT(String(beatAvg), "bpm", 0, 0); break;
       }
     }
     everyX = millis() - previousMs;
@@ -146,13 +146,13 @@ void checkforAlarms() {
       cycleCount++;
       if (cycleCount > 100) gotoDeepSleep();      // simulate powerOFF while critical alarm
 
-      if (cycleCount % 5 == 0) {
+      if (cycleCount % 3 == 0) {
         tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 105, 10, TFT_BLACK);
         tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 75, 10, TFT_RED);
         tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 45, 10, TFT_BLACK);
         ledB = 200;
         ledcWrite(1, ledB);
-        tone(beepPin, 2600, 80);
+        tone(beepPin, 2600, 300);
       } else {
         tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 105, 10, TFT_RED);
         tft.fillCircle(TFT_WIDTH - 20, TFT_HEIGHT - 75, 10, TFT_BLACK);
@@ -404,26 +404,26 @@ void Warnings() {
 
 void smlCarousel() {
   switch ( count ) {
-    case 0 ... 3: smlPRNT(String(BatPercent) + "%", "BATTERY", 0); break;
-    case 4 ... 6: smlPRNT(String(tempSCD, 1), "Celsius", 0); break;
-    case 7 ... 9: smlPRNT(String(UVI), "UV", 0); break;
-    case 10 ... 12: smlPRNT(String(steps), "STEPS", 0); break;
-    case 13 ... 15: smlPRNT(String(AirQI), "AirQI", 0); break;
-    case 16 ... 20: smlPRNT2(String(co2SCD), String(co2CCS), 0); break;
+    case 0 ... 3: smlPRNT(String(BatPercent) + "%", "BATTERY", -8, -20); break;
+    case 4 ... 6: smlPRNT(String(tempSCD, 0), "TEMP", 3, -1); break;
+    case 7 ... 9: smlPRNT(String(UVI), "UV INDEX", 16, -32); break;
+    case 10 ... 12: smlPRNT(String(steps), "STEPS", 16, -8); break;
+    case 13 ... 15: smlPRNT(String(AirQI), "AirQI", 16, -7); break;
+    case 16 ... 20: smlPRNT2(String(co2SCD), String(co2CCS), -10); break;
     default: count = 0; break;
   }
   count++;
 }
 
-void smlPRNT(String sensor, const char* label, int x) { // sml print data
+void smlPRNT(String sensor, const char* text, int x, int x2) { // sml print data
   u8g2.clearBuffer();     // clear the internal memory
-  sensor.toCharArray(charArr, 6);
+  sensor.toCharArray(charArr, 8);
 
-  u8g2.setFont(u8g2_font_logisoso22_tf);
-  u8g2.drawStr(u8g2.getUTF8Width(charArr) / 2 + 32 + x, 8, charArr);
+  u8g2.setFont(u8g2_font_logisoso20_tf);
+  u8g2.drawStr((u8g2.getStrWidth(charArr) / 2) + 32 + x, 24, charArr);
 
   u8g2.setFont(u8g2_font_chroma48medium8_8r); // choose a suitable font
-  u8g2.drawStr(u8g2.getUTF8Width(label) / 2 + 32, 0, label); // write something to the internal memory
+  u8g2.drawStr((u8g2.getStrWidth(text) / 2) + 32 + x2, 32, text); // write something to the internal memory
 
   u8g2.sendBuffer();     // transfer internal memory to the display
 }
@@ -433,12 +433,12 @@ void smlPRNT2(String val1, String val2, int x) {
   val1.toCharArray(charArr, 5);
 
   u8g2.setFont(u8g2_font_logisoso18_tn);
-  u8g2.drawStr(u8g2.getUTF8Width(charArr) / 2 + 32 + x, 13, charArr); // write something to the internal memory
+  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x, 20, charArr); // write something to the internal memory
 
   val2.toCharArray(charArr, 5);
 
   u8g2.setFont(u8g2_font_helvR10_tn);
-  u8g2.drawStr(u8g2.getUTF8Width(charArr) / 2 + 32, 0, charArr); // write something to the internal memory
+  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32, 32, charArr); // write something to the internal memory
 
   u8g2.sendBuffer();     // transfer internal memory to the display
 }

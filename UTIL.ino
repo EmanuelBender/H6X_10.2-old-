@@ -572,7 +572,7 @@ void createNeedle3(void) {
 }
 
 
-int uviColor() {
+uint16_t uviColor() {
   switch (UVI) {
     case 1:
       return TFT_MIDDLEGREEN;
@@ -590,7 +590,7 @@ int uviColor() {
       return TFT_RED;
       break;
     default:
-      return TFT_MIDDLEGREY;
+      return TFT_WHITE;
       break;
   }
 }

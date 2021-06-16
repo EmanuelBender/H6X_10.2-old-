@@ -63,7 +63,7 @@ bool wifiPrint() {
               lowPowerMode = true;
               setCpuFrequencyMhz(80);
               myCCS811.setDriveMode(2);   // 0=idle, 1=1sec, 2=10sec, 3=60sec, 4=RAW
-              scd30.setMeasurementInterval(300);
+              scd30.setMeasurementInterval(60);
               ina260.setAveragingCount(INA260_COUNT_64);
               ina260.setVoltageConversionTime(INA260_TIME_8_244_ms); // 140_us, 204_us, 332_us, 558_us, 1_1_ms,
               ina260.setCurrentConversionTime(INA260_TIME_8_244_ms);
@@ -132,10 +132,8 @@ bool wifiPrint() {
             }
             if (header.indexOf("GET /WKE/one") >= 0) {
               sleepWakeupTime = 600;
-              //esp_sleep_enable_timer_wakeup(sleepWakeupTime * uS_TO_S_FACTOR);
             } else if (header.indexOf("GET /WKE/ten") >= 0) {
               sleepWakeupTime = 60;
-              //esp_sleep_enable_timer_wakeup(sleepWakeupTime * uS_TO_S_FACTOR);
             }
 
             String HTMLpage = "";

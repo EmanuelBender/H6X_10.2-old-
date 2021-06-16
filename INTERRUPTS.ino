@@ -45,7 +45,7 @@ void IRAM_ATTR buttonInterrupt2() {
    page 5: Home
    page 6: CO2 Info
    page 7: VOC info
-   page 8: THermal Cam
+   page 8: Thermal Cam
    page 9: Heartrate
 */
 
@@ -56,11 +56,11 @@ void sinlgeClick() { // Single Click
   switch ( pageCount ) {
     case 0:
       switch ( menuCar ) {
-        case 1: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(50); pageCount = 1;  break;  // 1 & 3 swapped !!!
-        case 2: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(50); pageCount = 3;  break;
-        case 3: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(50); pageCount = 5;  break;
-        case 4: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(50); pageCount = 8;  break;
-        case 5: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(50); pageCount = 9;  break;
+        case 1: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 1;  break;
+        case 2: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 3;  break;
+        case 3: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 5;  break;
+        case 4: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 8;  break;
+        case 5: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 9;  break;
       }
       break;
     case 1:  ledBon = !ledBon; break;
@@ -100,7 +100,7 @@ void doubleClick() {       // double Click
     case 5: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false;
     case 6: break;
     case 7: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; break;
-    case 8: measurePoint = !measurePoint; /*amgSetHiRes = !amgSetHiRes;*/ break;
+    case 8: measurePoint = !measurePoint; amgSetHiRes = !amgSetHiRes; break;
     case 9: {
         irOffset += 5;
         constHRtop = 93 - irOffset;
