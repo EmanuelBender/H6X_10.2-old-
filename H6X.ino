@@ -27,7 +27,7 @@
     VEML6075 broken?
   ========================================================================================*/
 
-#define Revision "10.0"
+#define Revision "10.0" // Alpha Stage
 
 #include <Arduino.h>
 #include <Credentials.h>
@@ -345,8 +345,7 @@ WiFiServer  server(80);
 Preferences preferences;
 uint32_t    chipId;
 
-byte   WiFistatus, WiFiRSSI;
-byte   wifiNetworks;
+byte   WiFistatus, WiFiRSSI, wifiNetworks;
 String wiFiName;
 String header;
 

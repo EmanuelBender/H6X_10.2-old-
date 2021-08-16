@@ -1671,7 +1671,7 @@ void page8() {     // Thermal Cam
         notiWarnings();
         wifiPrint();
         checkScreenState();
-        readEnvironmentData();   // CCS811 Function
+        readEnvironmentData();
         printStatusBar();
       }
     }

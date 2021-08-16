@@ -36,7 +36,6 @@ void readSystemPower() {
         batIDX++;
       }
 
-
       SOC           = constrain(map(voltsAvg, 6400, 8380, 0, 100), 0, 100);
       capacityLeft  = constrain(map(voltsAvg, 6400, 8380, 0, BatteryCapacity), 0, BatteryCapacity);
       batDayLeft    = (capacityLeft / ampsAvg) / 24;
