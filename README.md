@@ -17,11 +17,11 @@ Components:
 <li>VEML6075</li>
 <li>AMG8833</li>
 <li>MAX30105</li>
+<li>MPU9250</li>
 <li>DS18B20</li>
 <li>INA260</li>
 <li>DS3231</li>
 <li>microSD Card Reader</li>
-<li>(deprecated) MPU9250</li>
 <br>
 <br>
 <p><b>The Story:</b><br/>
