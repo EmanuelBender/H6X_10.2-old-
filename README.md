@@ -9,7 +9,7 @@
 Components:
 <li>ESP32</li>
 <li>1.54" 240x240 TFT Screen</li>
-<li>OLED 0.91" 128x32</li>
+<li>0.91" 128x32 OLED Screen</li>
 <li>SCD30</li>
 <li>CCS811</li>
 <li>PA1010D</li>
