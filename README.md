@@ -9,6 +9,7 @@
 Components:
 <li>ESP32</li>
 <li>1.54" 240x240 TFT Screen</li>
+<li>OLED 0.91" 128x32</li>
 <li>SCD30</li>
 <li>CCS811</li>
 <li>PA1010D</li>
@@ -43,7 +44,7 @@ Government chartered ariplane, wich we almost missed. <br/>
 
 Back in Germany i started planning. Very little know how about machining coding etc. but i'm getting there, slowly but surely. <br/>
 Going through all the available arduino sensors and now looking into industrial sensors. <br/>
-Getting into deep rabbitholes about for example thermal conductivity of aluminium vs copper variants. <br/>
+Getting into deep rabbitholes about for example thermal conductivity of aluminium vs copper variants or making up a crude 'operating system'. <br/>
 Trying to add functionality into every last square mm while keeping it 'minimal' and robust. <br/>
 <br/>
 <br/>
