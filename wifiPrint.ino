@@ -48,8 +48,10 @@ bool wifiPrint() {
 
             if (header.indexOf("GET /LOG/off") >= 0) {
               loggingActive = true;
+              putPersistentBool("loggingActive", loggingActive);
             } else if (header.indexOf("GET /LOG/on") >= 0) {
               loggingActive = false;
+              putPersistentBool("loggingActive", loggingActive);
             }
 
             if (header.indexOf("GET /MUTE/off") >= 0) {
@@ -62,7 +64,7 @@ bool wifiPrint() {
               deepSleepActive = true;
               lowPowerMode = true;
               setCpuFrequencyMhz(80);
-              myCCS811.setDriveMode(2);   // 0=idle, 1=1sec, 2=10sec, 3=60sec, 4=RAW
+              myCCS811.setDriveMode(3);   // 0=idle, 1=1sec, 2=10sec, 3=60sec, 4=RAW
               scd30.setMeasurementInterval(60);
               ina260.setAveragingCount(INA260_COUNT_64);
               ina260.setVoltageConversionTime(INA260_TIME_8_244_ms); // 140_us, 204_us, 332_us, 558_us, 1_1_ms,
@@ -108,10 +110,8 @@ bool wifiPrint() {
             }
 
             if (header.indexOf("GET /RST") >= 0) {
-              htmlRestart = 1;
-              preferences.begin("my - app", false);
-              preferences.putBool("htmlRestart", htmlRestart); // Store the counter to the Preferences
-              preferences.end();
+              htmlRestart = true;
+              putPersistentBool("htmlRestart", htmlRestart);
               ESP.restart();
             }
             if (header.indexOf("GET /LOG/del") >= 0) {
@@ -152,10 +152,10 @@ bool wifiPrint() {
             HTMLpage += "<table style=width:\"25%\"; font-size: \"200%\"; text-align:\"center\">";
             HTMLpage += "<tr>";
             HTMLpage += "<th>";
-            HTMLpage += Volts;
+            HTMLpage += voltsAvg;
             HTMLpage += " V</th>";
             HTMLpage += "<th>";
-            HTMLpage += Amps;
+            HTMLpage += ampsAvg;
             HTMLpage += " A</th>";
 
             HTMLpage += "<tr>";
@@ -191,7 +191,7 @@ bool wifiPrint() {
             HTMLpage += co2SCD;
             HTMLpage += "ppm</td>";
             HTMLpage += "<td>";
-            HTMLpage += tvocCCS;
+            HTMLpage += tvocSMPL;
             HTMLpage += "ppm</td>";
             HTMLpage += "</tr>";
 
@@ -263,7 +263,7 @@ bool wifiPrint() {
             }
 
             client.print("<br/>");
-            if (fanActive == 1) {
+            if (fanActive) {
               client.print("<a href=\"/FAN/on\"><button class=\"button\">FAN</button></a>");
             } else {
               client.print("<a href=\"/FAN/off\"><button class=\"button button2\">FAN</button></a>");
@@ -297,31 +297,31 @@ bool wifiPrint() {
                 client.print("MENU");
                 break;
               case 1:
-                client.print("HOME");
+                client.print("DEBU");
                 break;
               case 2:
-                client.print("TEMP");
+                client.print("SD");
                 break;
               case 3:
-                client.print("BODY");
+                client.print("SYST");
                 break;
               case 4:
-                client.print("HRO2");
-                break;
-              case 5:
                 client.print("GRPH");
                 break;
+              case 5:
+                client.print("HOME");
+                break;
               case 6:
-                client.print("DIAG");
+                client.print("INFO");
                 break;
               case 7:
-                client.print("SDCR");
+                client.print("INFO");
                 break;
               case 8:
-                client.print("INFO");
+                client.print("THER");
                 break;
               case 9:
-                client.print("INFO");
+                client.print("HR");
                 break;
             }
 
@@ -351,7 +351,7 @@ bool wifiPrint() {
             client.print("<p style=\"font-size:100%; text-align: center\">");
             client.print(RTCprint);
             client.println("<br>");
-            client.print(RTCdate);
+            client.print(RTCd);
             if (SDpresent) {
               client.print("<br><b>SD Online<b/><br/>");
             } else {

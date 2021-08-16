@@ -1,18 +1,21 @@
 #include <pgmspace.h>
 
 void Time(tm localTime) {
-  minElapsed = millisElapsed / 1000 / 60; // time elapsed since boot in min
-  secElapsed = millisElapsed / 1000;
+  secElapsed = millisElapsed / 1000;   // time elapsed since boot in min
+  minElapsed = secElapsed / 60;
+  time(&now);                      // RTC time
+  localtime_r(&now, &timeinfo);    // ESP32 Time format
   DateTime now = rtc.now();
   tempRTC = rtc.getTemperature();
 
-  yr = now.year();    // RTC time
+  yr = now.year() - 208;    // RTC time
   mo = now.month();
   da = now.day();
   hr = now.hour();
   mi = now.minute();
   se = now.second();
   dow = now.dayOfTheWeek();
+
   /*
     yr = localTime.tm_year - 100;  // ESP system Time
     mo = localTime.tm_mon + 1;
@@ -22,10 +25,9 @@ void Time(tm localTime) {
     se = localTime.tm_sec;
     dow = now.dayOfTheWeek();
   */
-
-
-  RTCdate = "/" + String(da) + "." + String(mo) + "." + String(yr) + ".txt";
-  RTCdate.toCharArray(LogFile, 16);
+  RTClogfile = "";
+  RTClogfile = "/" + String(da) + "." + String(mo) + "." + String(yr) + ".txt";
+  RTClogfile.toCharArray(LogFile, 16);
 
   RTCt = "";
   RTCt += "\n";
@@ -42,9 +44,10 @@ void Time(tm localTime) {
   }
   RTCt += String(se);
   RTCt += ", ";
-
   RTCt.toCharArray(RTClog, 13);
 
+  RTCd = "";
+  RTCd += String(da) + "." + String(mo) + "." + String(yr);
 
   RTCprint = "";
   if (hr <= 9) {
@@ -65,10 +68,10 @@ void Time(tm localTime) {
 void Logging() {
   if (loggingActive && SDpresent) {
     //  readLogFile(SD, LogFile);
-    // "\nTime, Bat %, Load V, Current, Watts, t1, t2, t3, t4, t5, t6, t7, CO2, tVOC, Temp, RH, Alt, UV, Backlight, Fan, LED, LowPower, deepSleep\n";
     SDdata = "";
 
     SDdata += RTCt;
+    SDdata += RTCd + ", ";
     SDdata += PowerLog;
     SDdata += tempProbes;
 
@@ -120,7 +123,36 @@ void Logging() {
   }
 }
 
+void panicLog() {
 
+  if (SDpresent) {
+    panic = "";
+    panic += RTCt + RTCd + ", ";
+    panic += "Sleep in: " + String(100 - cycleCount) + "\n";
+    panic += "Power: " + String(Volts) + "V, " + String(Amps) + "A, " + String(SOC) + "%\n";
+
+    panic += "Temps: ";
+    panic += String(t1) + "°, ";
+    panic += String(t2) + "°, ";
+    panic += String(t3) + "°, ";
+    panic += String(t4) + "°, ";
+    panic += String(t5) + "°, ";
+    panic += String(t6) + "°, ";
+    panic += String(t7) + "°, ";
+    panic += String(t8) + "°\n";
+
+    panic += String(tempBME) + "°, " + String(tempSCD) + "°, " + String(tempHDC) + "°, " + String(tempRTC) + "°, " + String(amg.readThermistor()) + "°\n";
+
+    if (wetAlarm) panic += "Ingress Detected!, ";
+    panic += String(humidSCD) + "%, " + String(humidHDC) + "%";
+
+    if (fanActive) panic += ", Fan Active";
+
+    panic += "\n";
+
+    appendFile(SD, LogFile, panic.c_str());
+  }
+}
 
 
 /*

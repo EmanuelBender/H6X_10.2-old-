@@ -11,7 +11,7 @@ void page0() {
     tft.setTextSize(1);
     tft.setTextColor(TFT_BLACK);
     tft.setTextDatum(BL_DATUM);
-    tft.drawString("v" + String(Revision), 204, 240, 2);
+    tft.drawString("a" + String(Revision), 202, 240, 2);
 
     tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_MIDDLEGREY);
     mY = 160;
@@ -20,14 +20,13 @@ void page0() {
     //    tft.readRect(0, 88, TFT_WIDTH, 32, menuReadRect);   // x, y, w, h, data array 7680
 
     while (pageCount == 0) {
-      checkforAlarms();
       if (!notiOn) everyXsec();
       checkScreenState();
       if (everyXsecFlag && !notiOn) printStatusBar();
       notiWarnings();
       wifiPrint();
-      readCCS811();   // CCS811 Function
-      readSCD30();    // SCD30 Function
+      readEnvironmentData();   // CCS811 Function
+      checkforAlarms();
 
       if (menuCar == 0) menuCar = 5;
       if (menuCar > 5) menuCar = 1;
@@ -35,7 +34,7 @@ void page0() {
       tft.setTextSize(1);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       tft.setTextDatum(TC_DATUM);
-      //      if (everyXsecFlag) menuIcons();
+      if (everyXsecFlag) menuIcons();
 
       tft.setTextPadding(240);
       switch ( menuCar ) {     // X axis
@@ -237,12 +236,19 @@ void page0() {
           }
       }
 
-      if (everyXsecFlag) {
-        tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+      if (everyXsecFlag && !notiOn) {
+        tft.setTextColor(TFT_WHITE, TFT_BLACK);
         tft.setTextDatum(TC_DATUM);
         tft.setTextPadding(60);
         tft.drawString(RTCprint, 120, 1, 2);
-        tft.setTextPadding(240);
+
+
+        //        tft.setTextDatum(TC_DATUM);
+        //        tft.setTextPadding(60);
+        //        tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+        //        tft.drawString(String(SOC), 120, 171, 2);
+        //        tft.drawString(String(socVolts) + "V", 120, 187, 2);
+
       }
       //      tft.setTextColor(TFT_WHITE, TFT_BLACK);
       //      tft.setCursor(205, 19);
@@ -284,7 +290,6 @@ void page1() {   // Settings / Diagnostics
     scrollTFT = 0;
     chipId = 0;
     previousTime1 = 0;
-    scd30.setMeasurementInterval(5);
 
     while (pageCount == 1) {
       checkforAlarms();
@@ -303,8 +308,8 @@ void page1() {   // Settings / Diagnostics
         tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
         tft.print(WiFi.RSSI()); tft.println("dB");
         tft.setTextColor(TFT_WHITE, TFT_BLACK);
-
       }
+
       tft.setTextSize(1);
       tft.setTextDatum(TC_DATUM);
       tft.setTextPadding(50);
@@ -326,9 +331,9 @@ void page1() {   // Settings / Diagnostics
         tft.setTextColor(TFT_WHITE, TFT_BLACK);
         tft.drawString("AMG8833", 25, 98 - scrollTFT, 1);
 
-        Wire.beginTransmission(0x69);   //  AMG8833 Modes
-        Wire.write(0x00);   // Register
-        Wire.write(0x00);   // Value to Register 0x00 - Normal, 0x10 - Sleep, 0x20 - 60sec, 0x21 - 10sec
+        Wire.beginTransmission(0x69);  //  AMG8833 Modes
+        Wire.write(0x00);     // Register
+        Wire.write(0x00);     // Value to Register 0x00 - Normal, 0x10 - Sleep, 0x20 - 60sec, 0x21 - 10sec
         if (Wire.endTransmission() != 0) activeAMG = false;
 
         if (activeAMG) {
@@ -343,6 +348,7 @@ void page1() {   // Settings / Diagnostics
         if (VML.begin()) {
           if (VML.isConnected()) {
             drawBmp(SPIFFS, "/ok12.bmp", 84, 107 - scrollTFT);
+            tft.drawString(String(VML.getIntegrationTime()) + "ms", 90, 121 - scrollTFT, 1);
             activeVML = true;
           } else {
             drawBmp(SPIFFS, "/inactive12.bmp", 84, 107 - scrollTFT);
@@ -350,7 +356,7 @@ void page1() {   // Settings / Diagnostics
         } else {
           activeVML = false;
           drawBmp(SPIFFS, "/notok12.bmp", 84, 107 - scrollTFT);
-          tft.drawString("err: " + String(VML.begin()), 90, 121 - scrollTFT, 1);
+          tft.drawString("err:" + String(VML.begin()) + " " + String(VML.getIntegrationTime()) + "ms", 90, 121 - scrollTFT, 1);
         }
 
 
@@ -388,6 +394,7 @@ void page1() {   // Settings / Diagnostics
         switch (ina260.getMode()) {
           case 0x00: // shutdown
             drawBmp(SPIFFS, "/inactive12.bmp", 19, 146 - scrollTFT);
+            activeINA = false;
             break;
           case 0x03: // triggered
             drawBmp(SPIFFS, "/ok12.bmp", 19, 146 - scrollTFT);
@@ -492,10 +499,11 @@ void page1() {   // Settings / Diagnostics
 
       tft.setTextColor(TFT_WHITE);
       //      tft.drawString("SPI " + String(int(SPI_FREQUENCY / uS_TO_S_FACTOR)) + "MHz", x, y + 70 - scrollTFT, 1);
-      tft.drawString("SPI " + String(Wire.getClock()) + "MHz", x, y + 70 - scrollTFT, 1);
-      tft.drawString("I2C " + String(I2C_SPEED_FAST / 1000) + "kb/s", x, y + 80 - scrollTFT, 1);
+      tft.drawString("SPI " + String(SPI_FREQUENCY / uS_TO_S_FACTOR) + "MHz", x, y + 70 - scrollTFT, 1);
+      tft.drawString("I2C " + String(Wire.getClock()) + "MHz", x, y + 80 - scrollTFT, 1);
+      tft.drawString("I2C " + String(I2C_SPEED_FAST / 1000) + "kb/s", x, y + 90 - scrollTFT, 1);
 
-      tft.drawString(String("     "), x, y + 90 - scrollTFT, 1);
+      tft.drawString(String("     "), x, y + 100 - scrollTFT, 1);
 
       if (!notiOn) {
         tft.setTextDatum(TC_DATUM);
@@ -507,7 +515,7 @@ void page1() {   // Settings / Diagnostics
         tft.setTextColor(TFT_WHITE, TFT_BLACK);
         tft.setTextSize(1);
         tft.println();
-        tft.print(ESP.getSdkVersion()); // tft.print(esp_get_idf_version());
+        tft.print(esp_get_idf_version()); // tft.print(ESP.getSdkVersion());
 
         for (int i = 0; i < 17; i = i + 8) {
           chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
@@ -528,10 +536,9 @@ void page1() {   // Settings / Diagnostics
 
       notiWarnings();
       wifiPrint();
-      readCCS811();   // CCS811 Function
-      readSCD30();    // SCD30 Function
+      readEnvironmentData();   // CCS811 Function
 
-      if ( millisElapsed - previousTime1 > 9000 ) {     // WiFi Network Scanner every 8 sec
+      if ( millisElapsed - previousTime1 > 9000 ) {     // WiFi Network Scanner every 9 sec
 
         previousTime1 = millisElapsed;
         yield();
@@ -668,8 +675,7 @@ void page2() {                     // SD Directories
       notiWarnings();
       wifiPrint();
       checkScreenState();
-      readCCS811();   // CCS811 Function
-      readSCD30();    // SCD30 Function
+      readEnvironmentData();   // CCS811 Function
 
       tft.setCursor(0, 60 - scrollTFT);
       File root = SD.open("/");
@@ -774,7 +780,7 @@ void page3() {         // System
     tft.setTextSize(1);
     tft.setTextColor(TFT_CYAN);
     tft.setTextDatum(BL_DATUM);
-    tft.drawString("v" + String(Revision), 210, 240, 2);
+    tft.drawString("a" + String(Revision), 202, 240, 2);
 
     while (pageCount == 3) {
       checkforAlarms();
@@ -886,10 +892,9 @@ void page3() {         // System
       wifiPrint();
       checkScreenState();
       notiWarnings();
-      readCCS811();   // CCS811 Function
-      readSCD30();    // SCD30 Function
+      readEnvironmentData();   // CCS811 Function
       if (screenState && everyXsecFlag) printStatusBar();
-      smlPRNT2(String(Volts) + "v", String(Amps) + "a", -16);
+      smlPRNT2(String(Volts) + "v", String(Amps) + "a", -16, 0);
 
       tft.setTextSize(1);
       tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
@@ -930,13 +935,13 @@ void page4() {  // Graph Page    --     Sensors go into High Speed mode todo: sa
     everyXms = 500; // print dataPoint every 0.5 sec
 
     while (pageCount == 4) {
-      checkforAlarms();
       if (!notiOn) everyXsec();
-
+      checkforAlarms();
+      
       if (everyXsecFlag) { // print dataPoint every x sec
         // Lvolt = map(Volts, lowVoltAlarm, highVoltAlarm, box2Bottom - 1, box2Top + 1); // value, fromLow, fromHigh, toLow, toHigh
 
-        Lvolt = map(BatPercent, 0, 100, box2Bottom - 2, box2Top + 2); // value, fromLow, fromHigh, toLow, toHigh
+        Lvolt = map(SOC, 0, 100, box2Bottom - 2, box2Top + 2); // value, fromLow, fromHigh, toLow, toHigh
         currA = map(Amps, 0, 5, box2Bottom - 2, box2Top + 2);
 
         tft.setTextSize(1);
@@ -1009,7 +1014,7 @@ void page4() {  // Graph Page    --     Sensors go into High Speed mode todo: sa
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       tft.setCursor(51, box2Bottom + 4);
       if (Volts < 7 && Volts > 6.5) tft.setTextColor(TFT_ORANGE, TFT_BLACK);
-      if (Volts <= 6.6) tft.setTextColor(TFT_INDIA, TFT_BLACK);
+      if (Volts <= 6.5) tft.setTextColor(TFT_INDIA, TFT_BLACK);
       tft.print(Volts);
       tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
       tft.print("v");
@@ -1043,8 +1048,7 @@ void page4() {  // Graph Page    --     Sensors go into High Speed mode todo: sa
 
       notiWarnings();
       wifiPrint();
-      readCCS811();   // CCS811 Function
-      readSCD30();    // SCD30 Function
+      readEnvironmentData();   // CCS811 Function
 
       tft.setTextSize(1);
       tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
@@ -1055,7 +1059,7 @@ void page4() {  // Graph Page    --     Sensors go into High Speed mode todo: sa
       }
     }
     myCCS811.setDriveMode(1); // 0=idle, 1=1sec, 2=10sec, 3=60sec, 4=RAW
-    myBME280.setStandbyTime(5);  // 4 = 500ms, 5 = 1000ms, 0 = 0.5ms,
+    myBME280.setStandbyTime(4);  // 4 = 500ms, 5 = 1000ms, 0 = 0.5ms,
     scd30.setMeasurementInterval(5);
     everyXms = 1000;
     if (pageCount == 3) page3();
@@ -1128,8 +1132,8 @@ void page5() {
     spr.createSprite(55, 20);
     spr.setPivot(32, 35);      //32,55 Set pivot relative to top left corner of Sprite
     spr.fillSprite(TFT_WHITE);
-    spr.setTextColor(TFT_BLACK, TFT_WHITE);       // Green text
-    spr.drawString("   UVI", 0, 0, 2); // Plot text, font 4, in Sprite at 30, 15
+    spr.setTextColor(TFT_BLACK, TFT_WHITE);
+    spr.drawString("   UVI", 0, 0, 2);
     spr.pushRotated(60, 8);
     spr.deleteSprite();
 
@@ -1137,100 +1141,113 @@ void page5() {
     spr.createSprite(50, 20);
     spr.setPivot(32, 55);      //32,55 Set pivot relative to top left corner of Sprite
     spr.fillSprite(TFT_WHITE);
-    spr.setTextColor(TFT_BLACK, TFT_WHITE);        // Green text
-    spr.drawString("   AIR", 0, 0, 2); // Plot text, font 4, in Sprite at 30, 15
+    spr.setTextColor(TFT_BLACK, TFT_WHITE);
+    if (map(co2SCD, 0, 5000, -150, 30) > map(tvocSMPL, 0, 800, -150, 30)) {
+      spr.drawString("  CO2", 0, 0, 2);
+    } else {
+      spr.drawString("  VOC", 0, 0, 2);
+    }
     spr.pushRotated(-60, 12);
     tft.setSwapBytes(true);
     spr.deleteSprite();
 
     while (pageCount == 5) {
       checkforAlarms();
-      if (!notiOn) everyXsec();
+      everyXsec();
 
       if (screenState) {
         tft.setTextDatum(MC_DATUM);
         tft.setTextSize(1);
 
-        if (everyXsecFlag && !powerAlarm && !tempAlarm) {   // print TIME
+        if (everyXsecFlag && !powerAlarm && !tempAlarm) {
           tft.setTextPadding(100);
           tft.setTextColor(TFT_WHITE, TFT_BLACK);
           tft.drawString(RTCprint, 120, 105, 4);
 
           tft.setTextPadding(60);
           tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-          tft.drawString(String(daysOfTheWeek[dow]) + " " + String(da) + "." + String(mo) + "." + String(yr), 120, 120, 2);
+          tft.drawString(String(daysOfTheWeek[dow]) + " " + RTCd, 120, 120, 2);
 
-
-          angle = map(co2SMPL, 0, 8000, -150, 30); // angle = map(co2SCD, 0, 5000, -150, 30);
-          if (angle < 10) angle += 20; // max angle is 30
-          needle.fillCircle(needle.width() / 2, 5, 3, TFT_DARKGREY);
-          while (angle > -150) {
-            plotDial(dialX, dialY, angle, TFT_BLACK);
-            angle -= 2;
-            if (angle < -150) break;
-          }
-          tft.setTextPadding(22);
-          if (AirQI > 4) {
-            dial.setTextColor(TFT_INDIA, TFT_BLACK);
-            //            needle.fillCircle(needle.width() / 2, 5, 3, TFT_INDIA);
-          } else if (AirQI > 2 && AirQI < 4) {
-            dial.setTextColor(TFT_GOLD, TFT_BLACK);
-            //            needle.fillCircle(needle.width() / 2, 5, 3, TFT_GOLD);
-          } else if (AirQI < 2) {
-            dial.setTextColor(TFT_WHITE, TFT_BLACK);
-            //            needle.fillCircle(needle.width() / 2, 5, 3, TFT_WHITE);
-          }
-
-          needle.fillCircle(needle.width() / 2, 5, 3, TFT_WHITE);
           if (!notiOn) {
-            //            angle = map(co2SMPL, 0, 8000, -150, 30);
-            angle = map(co2SCD, 0, 5000, -150, 30);
-            if (angle == -150) angle += 10;
-            while (angle > -150) {
+            tft.setPivot(245, 186);
+            spr.createSprite(50, 20);
+            spr.setPivot(32, 55);      // 32, 55 Set pivot relative to top left corner of Sprite
+            spr.fillSprite(TFT_WHITE);
+            spr.setTextColor(TFT_BLACK, TFT_WHITE);
+            if (map(co2SCD, 0, 5000, -150, 30) > map(tvocSMPL, 0, 800, -150, 30)) {
+              spr.drawString("  CO2", 0, 0, 2);
+            } else {
+              spr.drawString("  VOC", 0, 0, 2);
+            }
+            spr.pushRotated(-60, 12);
+
+            if (map(co2SCD, 0, 5000, -150, 30) > map(tvocSMPL, 0, 800, -150, 30)) {
+              angle = map(co2SCD, 0, 5000, -150, 30);
+            } else {
+              angle = map(tvocSMPL, 0, 800, -150, 30);
+            }
+
+            if (angle < 0) angle += 30; // max angle is 30
+            needle.fillCircle(needle.width() / 2, 5, 3, TFT_DARKGREY);
+            while (angle > -140) {
               plotDial(dialX, dialY, angle, TFT_BLACK);
               angle -= 2;
-              if (angle < -150) break;
+              if (angle <= -140) break;
             }
-          }
 
-          /*
-                    switch (UVI) {
-                      case 1:         dial2.setTextColor(TFT_MIDDLEGREEN, TFT_BLACK); break;
-                      case 2 ... 5:   dial2.setTextColor(TFT_YELLOW, TFT_BLACK); break;
-                      case 6 ... 7:   dial2.setTextColor(TFT_ORANGE, TFT_BLACK); break;
-                      case 8 ... 10:  dial2.setTextColor(TFT_INDIA, TFT_BLACK); break;
-                      case 11 ... 15: dial2.setTextColor(TFT_RED, TFT_BLACK); break;
-                      default:        dial2.setTextColor(TFT_LIGHTGREY, TFT_BLACK); break;
-                    }
-          */
-          dial2.setTextColor(uviColor());
-          angle = map(UVI, 0, 13, 150, -30);
-          angle += 10;
-          needle2.fillCircle(needle2.width() / 2, 5, 3, TFT_DARKGREY);
-          while (angle < 150) {
-            plotDial2(dial2X, dial2Y, angle, TFT_BLACK);
-            angle += 2;
-            if (angle > 150) break;
-          }
-          needle2.fillCircle(needle2.width() / 2, 5, 3, TFT_WHITE);
-          if (!notiOn) {
+            tft.setTextPadding(22);
+            if (AirQI > 4) {
+              dial.setTextColor(TFT_INDIA, TFT_BLACK);
+              //            needle.fillCircle(needle.width() / 2, 5, 3, TFT_INDIA);
+            } else if (AirQI > 2 && AirQI < 4) {
+              dial.setTextColor(TFT_GOLD, TFT_BLACK);
+              //            needle.fillCircle(needle.width() / 2, 5, 3, TFT_GOLD);
+            } else if (AirQI < 2) {
+              dial.setTextColor(TFT_WHITE, TFT_BLACK);
+              //            needle.fillCircle(needle.width() / 2, 5, 3, TFT_WHITE);
+            }
+
+
+            if (map(co2SCD, 0, 5000, -150, 30) > map(tvocSMPL, 0, 800, -150, 30)) {
+              angle = map(co2SCD, 0, 5000, -150, 30);
+            } else {
+              angle = map(tvocSMPL, 0, 800, -150, 30);
+            }
+
+            if (angle == -150) angle += 10;
+            needle.fillCircle(needle.width() / 2, 5, 3, TFT_WHITE);
+            while (angle > -150) {
+              angle -= 2;
+              plotDial(dialX, dialY, angle, TFT_BLACK);
+              if (angle <= -150) break;
+            }
+
+
+            dial2.setTextColor(uviColor());
+            angle = map(UVI, 0, 13, 150, -30);
+            angle += 20;
+            needle2.fillCircle(needle2.width() / 2, 5, 3, TFT_DARKGREY);
+            while (angle < 140) {
+              plotDial2(dial2X, dial2Y, angle, TFT_BLACK);
+              angle += 2;
+              if (angle >= 140) break;
+            }
+            needle2.fillCircle(needle2.width() / 2, 5, 3, TFT_WHITE);
+
             angle = map(UVI, 0, 13, 150, -30);
             if (angle == 150) angle -= 10;
             while (angle < 150) {
               plotDial2(dial2X, dial2Y, angle, TFT_BLACK);
               angle += 2;
-              if (angle > 150) break;
+              if (angle >= 150) break;
             }
-          }
 
+            angle = map(tempBME, -15, 45, 270, 90);
+            needle3.fillCircle(needle3.width() / 2, 5, 3, TFT_WHITE); // change color of dial needle
+            plotDial3(dial3X, dial3Y, angle, TFT_TRANSPARENT);
 
-          angle = map(tempBME, -15, 45, 90, 270);
-          needle3.fillCircle(needle3.width() / 2, 5, 3, TFT_WHITE); // change color of dial needle
-          plotDial3(dial3X, dial3Y, angle, TFT_TRANSPARENT);
+            //   tft.drawString(/*String(tempBME, 1) + "C  " + */String(humidHDC, 1) + "%", 120, 16, 2);
 
-
-          //          if (!notiOn) tft.drawString(/*String(tempBME, 1) + "C  " + */String(humidHDC, 1) + "%", 120, 16, 2);
-          if (!notiOn) {
             tft.setTextColor(TFT_BLACK, TFT_WHITE);
             tft.setTextDatum(TC_DATUM);
             tft.setTextPadding(105);
@@ -1239,35 +1256,14 @@ void page5() {
           }
         }
 
-        /*
-                  tft.setPivot(90, 70);
-                  spr.createSprite(45, 20);
-                  spr.setPivot(32, 55);      //32,55 Set pivot relative to top left corner of Sprite
-                  spr.fillSprite(TFT_WHITE);
-                  if (tempBME < 0) {
-                    spr.setTextColor(TFT_BLUE, TFT_WHITE);
-                  } else if (tempBME < 15 && tempBME > 0) {
-                    spr.setTextColor(TFT_CYAN, TFT_WHITE);
-                  } else if (tempBME > 28 && tempBME < 34) {
-                    spr.setTextColor(TFT_PURPLE, TFT_WHITE);
-                  } else if (tempBME > 35) {
-                    spr.setTextColor(TFT_RED, TFT_WHITE);
-                  }
-                  spr.drawString(String(tempBME, 0) + "*", 0, 0, 4);
-                  spr.pushRotated(-60, 8);
-
-                  tft.setPivot(166, 100);
-                  spr.createSprite(45, 20);
-                  spr.setPivot(32, 55);          // 32,55 Set pivot relative to top left corner of Sprite
-                  spr.fillSprite(TFT_WHITE);
-                  spr.setTextColor(TFT_BLACK, TFT_WHITE);        // Green text
-                  spr.drawString(String(humidHDC, 0) + "%", 0, 0, 4); // RH
-                  spr.pushRotated(60, 12);
-                  tft.setSwapBytes(true);
-        */
-
-
-        if (everyXsecFlag && !notiOn) printStatusBar();
+        if (everyXsecFlag && !notiOn) {
+          printStatusBar();
+          tft.setTextDatum(TC_DATUM);
+          tft.setTextPadding(60);
+          tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+          tft.drawString(BatteryTime, 120, 171, 2);
+          tft.drawString(String(capacityLeft) + "mAh", 120, 187, 2);
+        }
         //        tft.setTextPadding(22);
         //        tft.setTextSize(1);
         //        tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
@@ -1283,8 +1279,7 @@ void page5() {
       //      checkScreenState();
       notiWarnings();
       wifiPrint();
-      readCCS811();   // CCS811 Function
-      readSCD30();    // SCD30 Function
+      readEnvironmentData();   // CCS811 Function
     }
     if (pageCount == 6); page6();
     if (pageCount == 4) pageCount = 0; menuCar = 3; page0();
@@ -1342,13 +1337,12 @@ void page6() { // Info CO2
         if (co2SCD > 2000 && co2SCD < 3000) tft.setTextColor(TFT_ORANGE, TFT_BLACK);
         if (co2SCD > 4000 && co2SCD < 5000) tft.setTextColor(TFT_INDIA, TFT_BLACK);
         if (co2SCD > 5000) tft.setTextColor(TFT_RED, TFT_BLACK);
-        if (!notiOn) tft.drawString("CO2  " + String(co2SCD) + "ppm", 10, 10, 4);
+        if (!notiOn) tft.drawString("CO2  " + String(co2SCD) + "ppm", 10, 15, 4);
       }
       notiWarnings();
       wifiPrint();
       checkScreenState();
-      readCCS811();   // CCS811 Function
-      readSCD30();    // SCD30 Function
+      readEnvironmentData();   // CCS811 Function
 
       //      tft.setTextSize(1);
       //      tft.setTextDatum(TL_DATUM);
@@ -1411,17 +1405,16 @@ void page7() {   // Info tVOC
         everyXsec();
         tft.setTextSize(1);
         tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        if (tvocCCS > 60 && tvocCCS < 120) tft.setTextColor(TFT_GOLD, TFT_BLACK);
-        if (tvocCCS > 120 && tvocCCS < 400) tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+        if (tvocCCS > 80 && tvocCCS < 180) tft.setTextColor(TFT_GOLD, TFT_BLACK);
+        if (tvocCCS > 180 && tvocCCS < 400) tft.setTextColor(TFT_ORANGE, TFT_BLACK);
         if (tvocCCS > 400 && tvocCCS < 1500) tft.setTextColor(TFT_INDIA, TFT_BLACK);
         if (tvocCCS > 1500) tft.setTextColor(TFT_RED, TFT_BLACK);
-        if (!notiOn) tft.drawString("tVOC  " + String(tvocSMPL) + "ppb", 10, 10, 4);
+        if (!notiOn) tft.drawString("tVOC  " + String(tvocSMPL) + "ppb", 10, 15, 4);
       }
       notiWarnings();
       wifiPrint();
       checkScreenState();
-      readCCS811();   // CCS811 Function
-      readSCD30();    // SCD30 Function
+      readEnvironmentData();   // CCS811 Function
 
 
       //      tft.setTextSize(1);
@@ -1536,13 +1529,13 @@ void page8() {     // Thermal Cam
               amg8833();
             }
 
-            tft.drawRoundRect(-1, -11, 242, 235, 2, TFT_BLACK);
-            tft.drawRoundRect(-1, -11, 242, 235, 4, TFT_BLACK);
-            tft.drawRoundRect(-1, -11, 242, 235, 6, TFT_BLACK);
-            tft.drawRoundRect(-1, -11, 242, 235, 7, TFT_BLACK);
-            tft.drawRoundRect(-1, -11, 242, 235, 8, TFT_BLACK);
-            tft.drawRoundRect(-1, -11, 242, 235, 10, TFT_BLACK);
-            tft.drawRoundRect(-1, -11, 242, 235, 12, TFT_BLACK);
+            tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 2, TFT_BLACK);
+            tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 4, TFT_BLACK);
+            tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 6, TFT_BLACK);
+            tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 7, TFT_BLACK);
+            tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 8, TFT_BLACK);
+            tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 10, TFT_BLACK);
+            tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 12, TFT_BLACK);
 
             if (measurePoint) {
               tft.drawRoundRect(80, 77, 80, 80, 38, TFT_RED);
@@ -1627,13 +1620,13 @@ void page8() {     // Thermal Cam
         } else {
           tft.drawString(String(pixels[28], 1) + " C", 120, 143, 2);
         }
-        tft.drawRoundRect(-1, -11, 242, 235, 2, TFT_BLACK);
-        tft.drawRoundRect(-1, -11, 242, 235, 4, TFT_BLACK);
-        tft.drawRoundRect(-1, -11, 242, 235, 6, TFT_BLACK);
-        tft.drawRoundRect(-1, -11, 242, 235, 7, TFT_BLACK);
-        tft.drawRoundRect(-1, -11, 242, 235, 8, TFT_BLACK);
-        tft.drawRoundRect(-1, -11, 242, 235, 10, TFT_BLACK);
-        tft.drawRoundRect(-1, -11, 242, 235, 12, TFT_BLACK);
+        tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 2, TFT_BLACK);
+        tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 4, TFT_BLACK);
+        tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 6, TFT_BLACK);
+        tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 7, TFT_BLACK);
+        tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 8, TFT_BLACK);
+        tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 10, TFT_BLACK);
+        tft.drawRoundRect(-1, -11, TFT_WIDTH + 2, TFT_WIDTH - 5, 12, TFT_BLACK);
 
         if (everyXsecFlag) {
           //        tft.setTextDatum(BC_DATUM);
@@ -1678,8 +1671,7 @@ void page8() {     // Thermal Cam
         notiWarnings();
         wifiPrint();
         checkScreenState();
-        readCCS811();   // CCS811 Function
-        readSCD30();    // SCD30 Function
+        readEnvironmentData();   // CCS811 Function
         printStatusBar();
       }
     }
@@ -1730,8 +1722,7 @@ void page9() {     // MAX30105 HRO2 particle
         }
 
         //      wifiPrint();
-        //      readCCS811();   // CCS811 Function
-        //      readSCD30();    // SCD30 Function
+        //      readEnvironmentData();   // CCS811 Function
 
         if (screenState) {
           MAX30105.check();
@@ -1757,7 +1748,7 @@ void page9() {     // MAX30105 HRO2 particle
 
           irValue = MAX30105.getIR();
           if (checkForBeat(irValue)) {  // we sensed a Beat!
-            //          if (!silentMode) tone(beepPin, 600, 2);
+            if (!silentMode) tone(beepPin, 600, 2);
             smlPRNT(String(beatAvg), "BPM", 0, 0);
 
             delta = millis() - lastBeat;
@@ -1769,7 +1760,7 @@ void page9() {     // MAX30105 HRO2 particle
               rates[rateSpot++] = (byte)beatsPerMinute; // Store this reading in the array
               rateSpot %= RATE_SIZE; // Wrap variable
 
-              beatAvg = 0;         // Take average of readings
+              beatAvg = 0;           // Take average of readings
               for (byte x = 0 ; x < RATE_SIZE ; x++) {
                 beatAvg += rates[x];
                 beatAvg /= RATE_SIZE;
@@ -1785,7 +1776,7 @@ void page9() {     // MAX30105 HRO2 particle
           tft.drawFloat(ESpO2, 2, 8, box2Bottom + 4, 1);
 
           // unadjusted graph
-          //        tft.drawPixel(edgeL + 1, map(constrain(irValue, ledBrightness * constHRbottom, ledBrightness * constHRtop), ledBrightness * constHRbottom, ledBrightness * constHRtop, box1Bottom - 1, box1Top + 2) - 1, TFT_MIDDLEGREEN); // 780 , 1000
+          //   tft.drawPixel(edgeL + 1, map(constrain(irValue, ledBrightness * constHRbottom, ledBrightness * constHRtop), ledBrightness * constHRbottom, ledBrightness * constHRtop, box1Bottom - 1, box1Top + 2) - 1, TFT_MIDDLEGREEN); // 780 , 1000
 
           if (irValue > constHRtop * ledBrightness) { // adjust graph in case its out of bounds
             irValue -= 720; //  720
@@ -1835,8 +1826,7 @@ void page9() {     // MAX30105 HRO2 particle
         notiWarnings();
         wifiPrint();
         checkScreenState();
-        readCCS811();   // CCS811 Function
-        readSCD30();    // SCD30 Function
+        readEnvironmentData();   // CCS811 Function
         printStatusBar();
       }
     }

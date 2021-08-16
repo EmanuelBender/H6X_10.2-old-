@@ -6,7 +6,7 @@ void IRAM_ATTR buttonInterrupt1() {
     menuCar--;
   } else {
     pageCount--;
-    //    if (pageCount > menuPages) pageCount = 0;
+    if (pageCount > menuPages) pageCount = 0;
   }
 }
 
@@ -49,18 +49,21 @@ void IRAM_ATTR buttonInterrupt2() {
    page 9: Heartrate
 */
 
+
+
 void sinlgeClick() { // Single Click
+
 
   TFTon();
 
   switch ( pageCount ) {
     case 0:
       switch ( menuCar ) {
-        case 1: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 1;  break;
-        case 2: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 3;  break;
-        case 3: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 5;  break;
-        case 4: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 8;  break;
-        case 5: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(60); pageCount = 9;  break;
+        case 1: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(80); pageCount = 1; break;
+        case 2: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(80); pageCount = 3; break;
+        case 3: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(80); pageCount = 5; break;
+        case 4: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(80); pageCount = 8; break;
+        case 5: tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_GREEN); delay(80); pageCount = 9; break;
       }
       break;
     case 1:  ledBon = !ledBon; break;
@@ -75,9 +78,11 @@ void sinlgeClick() { // Single Click
   }
 }
 
-void doubleClick() {       // double Click
 
-  TFTon();
+void onPressedForDuration() {       // long press
+}
+
+void doubleClick() {    // double Click
 
   switch ( pageCount ) {
     case 0: break;
@@ -95,11 +100,11 @@ void doubleClick() {       // double Click
         break;
       }
     case 2: scrollTFT += 30; break;
-    case 3: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; break;
-    case 4: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; break;
-    case 5: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false;
-    case 6: break;
-    case 7: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; break;
+    case 3: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
+    case 4: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
+    case 5: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
+    case 6: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
+    case 7: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
     case 8: measurePoint = !measurePoint; amgSetHiRes = !amgSetHiRes; break;
     case 9: {
         irOffset += 5;
@@ -110,6 +115,7 @@ void doubleClick() {       // double Click
   }
 }
 
-void buttonISR() {
+
+void IRAM_ATTR buttonISR() {
   button.read(); // When button is being used through external interrupts,  parameter INTERRUPT must be passed to read() function
 }

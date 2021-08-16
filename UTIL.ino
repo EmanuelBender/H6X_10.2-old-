@@ -165,6 +165,13 @@ void drawBmp(fs::FS & fs, const char *filename, int16_t x, int16_t y) {
   bmpFS.close();
 }
 
+void putPersistentBool(String path, bool state) {
+  path.toCharArray(charArr, 14);
+  preferences.begin("my - app", false);
+  preferences.putBool(charArr, state); // store to Preferences
+  preferences.end();
+}
+
 void print_wakeup_reason() {
 
   tft.setTextColor(TFT_INDIA, TFT_BLACK);
@@ -176,19 +183,17 @@ void print_wakeup_reason() {
   alarmEnable = true;
 
   if (htmlRestart || deleteLog) {
-    SDloghead += "\nTime, Bat %, Load V, Current, Watts, t1, t2, t3, t4, t5, t6, t7, CO2, tVOC, Temp, RH, Alt, UV, Backlight, Fan, LED, Low Power, Deep Sleep\n";
+    SDloghead += SDLOGHEAD;
     SDloghead += RTClog;
     if (deleteLog) SDloghead += "Log Deleted,";
     if (htmlRestart) {
       SDloghead += "htmlRestart, #";
       SDloghead += String(counter);
-      SDloghead += ", v";
+      SDloghead += ", a";
       SDloghead += String(Revision);
       SDloghead += "\n";
       htmlRestart = 0;
-      preferences.begin("my - app", false);
-      preferences.putBool("htmlRestart", 0);
-      preferences.end();
+      putPersistentBool("htmlRestart", htmlRestart);
       tft.drawString("htmlRestart", 0, 0, 1);
       TFTon();
       deepSleepActive = false;
@@ -209,7 +214,7 @@ void print_wakeup_reason() {
         SDloghead += RTClog;
         SDloghead += "RTC_IO, #";
         SDloghead += String(counter);
-        SDloghead += ", v";
+        SDloghead += ", a";
         SDloghead += String(Revision);
         SDloghead += "\n";
         tft.drawString("RTC_IO", 0, 0, 1);
@@ -221,7 +226,7 @@ void print_wakeup_reason() {
         SDloghead += RTClog;
         SDloghead += "RTC_CTRL, #";
         SDloghead += String(counter);
-        SDloghead += ", v";
+        SDloghead += ", a";
         SDloghead += String(Revision);
         SDloghead += "\n";
         tft.drawString("RTC_CTRL", 0, 0, 1);
@@ -230,11 +235,11 @@ void print_wakeup_reason() {
         deepSleepActive = true;
         tftBKL = 0;
         TFToff();
-        SDloghead += "\n Time, Bat %, Load V, Current, Watts, t1, t2, t3, t4, t5, t6, t7, CO2, tVOC, Temp, RH, Alt, UV, Backlight, Fan, LED, Low Power, Deep Sleep\n";
+        SDloghead += SDLOGHEAD;
         SDloghead += RTClog;
         SDloghead += "RTC_TIMER, #";
         SDloghead += String(counter);
-        SDloghead += ", v";
+        SDloghead += ", a";
         SDloghead += String(Revision);
         SDloghead += "\n";
         tft.drawString("RTC_TIMER", 0, 0, 1);
@@ -243,11 +248,11 @@ void print_wakeup_reason() {
         deepSleepActive = true;
         tftBKL = 255;
         TFTon();
-        SDloghead += "\n Time, Bat %, Load V, Current, Watts, t1, t2, t3, t4, t5, t6, t7, CO2, tVOC, Temp, RH, Alt, UV, Backlight, Fan, LED, Low Power, Deep Sleep\n";
+        SDloghead += SDLOGHEAD;
         SDloghead += RTClog;
         SDloghead += "RTC_TOUCHPAD, #";
         SDloghead += String(counter);
-        SDloghead += ", v";
+        SDloghead += ", a";
         SDloghead += String(Revision);
         SDloghead += "\n";
         tft.drawString("RTC_TOUCHPAD", 0, 0, 1);
@@ -256,11 +261,11 @@ void print_wakeup_reason() {
         deepSleepActive = true;
         tftBKL = 0;
         TFToff();
-        SDloghead += "\n Time, Bat %, Load V, Current, Watts, t1, t2, t3, t4, t5, t6, t7, CO2, tVOC, Temp, RH, Alt, UV, Backlight, Fan, LED, Low Power, Deep Sleep\n";
+        SDloghead += SDLOGHEAD;
         SDloghead += RTClog;
         SDloghead += "RTC_ULP, #";
         SDloghead += String(counter);
-        SDloghead += ", v";
+        SDloghead += ", a";
         SDloghead += String(Revision);
         SDloghead += "\n";
         tft.drawString("RTC_ULP", 0, 0, 1);
@@ -269,11 +274,11 @@ void print_wakeup_reason() {
         deepSleepActive = false;
         tftBKL = 255;
         TFTon();
-        SDloghead += "\n Time, Bat %, Load V, Current, Watts, t1, t2, t3, t4, t5, t6, t7, CO2, tVOC, Temp, RH, Alt, UV, Backlight, Fan, LED, Low Power, Deep Sleep\n";
+        SDloghead += SDLOGHEAD;
         SDloghead += RTClog;
         SDloghead += "RESTART, #";
         SDloghead += String(counter);
-        SDloghead += ", v";
+        SDloghead += ", a";
         SDloghead += String(Revision);
         if (rtcLostPower) {                           // RTC setup
           SDloghead += ", Hard Reset\n";
@@ -508,8 +513,6 @@ void createNeedle(void) {
 }
 
 
-
-
 void createDialScale2(int16_t start_angle, int16_t end_angle, int16_t increment) {
   // Create the dial Sprite
   //  dial2.setColorDepth(8);       // Size is odd (i.e. 91) so there is a centre pixel at 45,45
@@ -538,7 +541,6 @@ void createNeedle2(void) {
   // Keep needle tip 1 pixel inside dial circle to avoid leaving stray pixels
   needle2.fillCircle(piv_x, 5, 3, TFT_WHITE); // change y for moving sprite in /out
 }
-
 
 
 
@@ -577,10 +579,10 @@ uint16_t uviColor() {
     case 1:
       return TFT_MIDDLEGREEN;
       break;
-    case 2 ... 5:
+    case 2 ... 4:
       return TFT_YELLOW;
       break;
-    case 6 ... 7:
+    case 5 ... 7:
       return TFT_ORANGE;
       break;
     case 8 ... 10:
