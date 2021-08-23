@@ -49,8 +49,7 @@
 #include "system.h" // in Libraries/png
 #include "Wifi12.h"
 #include "bTemp42.h"
-//#include "HEX240R_8bit.h"
-#include "HexWabe240.h"
+#include "HEX240R_8bit.h"
 // #include "TProbesB240.h"
 // #include "hex.h"       //tft.pushImage(0, 0, 240, 240, Hex_Blur_240x240); // put where image should be loaded
 

@@ -13,7 +13,7 @@ void page0() {
     tft.drawString("a" + String(Revision), 202, 240, 2);
 
     byte earthPositionX = map(hr, 0, 24, 0, 230);
-    byte earthPositionY = map(hr, 0, 24, 160, 175);
+    byte earthPositionY = map(hr, 0, 24, 160, 170);
 
     tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_MIDDLEGREY);
     mY = 160;
@@ -144,7 +144,7 @@ void page0() {
       switch ( menuCar ) { //  Y Axis Text
         case 1: {
             while (mY > 130) {
-              delay(2);
+              delay(3);
               //              tft.drawFastHLine(mX, mY + 14, 70, TFT_BLACK);
               //              tft.drawFastHLine(mX, mY + 15, 70, TFT_BLACK);
               tft.setTextColor(TFT_BLACK);
@@ -167,7 +167,7 @@ void page0() {
           }
         case 2: {
             while (mY > 130) {
-              delay(2);
+              delay(3);
               //              tft.drawFastHLine(mX, mY + 14, 70, TFT_BLACK);
               //              tft.drawFastHLine(mX, mY + 15, 70, TFT_BLACK);
               tft.setTextColor(TFT_BLACK);
@@ -190,7 +190,7 @@ void page0() {
           }
         case 3: {
             while (mY > 130) {
-              delay(2);
+              delay(3);
               tft.setTextColor(TFT_BLACK);
               tft.drawString("HOME", mX + 20, mY, 2);
               mY--;
@@ -211,7 +211,7 @@ void page0() {
           }
         case 4: {
             while (mY > 130) {
-              delay(2);
+              delay(3);
               tft.setTextColor(TFT_BLACK);
               tft.drawString("Thermal Cam", mX + 20, mY, 2);
               mY--;
@@ -232,7 +232,7 @@ void page0() {
           }
         case 5: {
             while (mY > 130) {
-              delay(2);
+              delay(3);
               tft.setTextColor(TFT_BLACK);
               tft.drawString("Heartrate", mX + 20, mY, 2);
               mY--;
@@ -1085,7 +1085,7 @@ void page5() {
 
     tft.fillScreen(TFT_BLACK);
     //    drawBmp(SPIFFS, "/HEX240.bmp", 0, 0);   // 24bit
-    tft.pushImage(0, 0, TFT_WIDTH, TFT_HEIGHT, HexWabe240);  // HEX240R_8bit
+    tft.pushImage(0, 0, TFT_WIDTH, TFT_HEIGHT, HEX240R_8bit);  // HEX240R_8bit
 
     /*
         tft.setTextSize(1);
