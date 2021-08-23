@@ -6,12 +6,14 @@ void page0() {
     tft.fillScreen(TFT_BLACK);
     tft.setTextDatum(TC_DATUM);
     drawBmp(SPIFFS, "/Moon240.bmp", 0, 190);
-    drawBmp(SPIFFS, "/EarthSmall.bmp", 167, 180);
 
     tft.setTextSize(1);
     tft.setTextColor(TFT_BLACK);
     tft.setTextDatum(BL_DATUM);
     tft.drawString("a" + String(Revision), 202, 240, 2);
+
+    byte earthPositionX = map(hr, 0, 24, 0, 230);
+    byte earthPositionY = map(hr, 0, 24, 160, 175);
 
     tft.drawRoundRect(mX, 84, 40, 40, 7, TFT_MIDDLEGREY);
     mY = 160;
@@ -26,7 +28,7 @@ void page0() {
       notiWarnings();
       wifiPrint();
       readEnvironmentData();   // CCS811 Function
-      checkforAlarms();
+      SYSTEM();
 
       if (menuCar == 0) menuCar = 5;
       if (menuCar > 5) menuCar = 1;
@@ -36,7 +38,7 @@ void page0() {
       tft.setTextDatum(TC_DATUM);
       if (everyXsecFlag) menuIcons();
 
-      tft.setTextPadding(240);
+      tft.setTextPadding(90);
       switch ( menuCar ) {     // X axis
         case 1:
           while (mX > 5) {
@@ -139,135 +141,144 @@ void page0() {
       }
 
 
-      switch ( menuCar ) { //  Y Axis
+      switch ( menuCar ) { //  Y Axis Text
         case 1: {
             while (mY > 130) {
-              tft.drawFastHLine(mX, mY + 14, 70, TFT_BLACK);
-              tft.drawFastHLine(mX, mY + 15, 70, TFT_BLACK);
+              delay(2);
+              //              tft.drawFastHLine(mX, mY + 14, 70, TFT_BLACK);
+              //              tft.drawFastHLine(mX, mY + 15, 70, TFT_BLACK);
+              tft.setTextColor(TFT_BLACK);
+              tft.drawString("System", mX + 20, mY, 2);
               mY--;
-              delay(1);
               if (mY < 160 && mY > 150) {
                 tft.drawString("     ", 120, 130, 2);
-                tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+                tft.setTextColor(TFT_DARKGREY);
               } else if (mY < 150 && mY > 145) {
-                tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
+                tft.setTextColor(TFT_MIDDLEGREY);
               } else if (mY < 145 && mY > 137) {
-                tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+                tft.setTextColor(TFT_LIGHTGREY);
               } else {
-                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                tft.setTextColor(TFT_WHITE);
               }
               tft.drawString("System", mX + 20, mY, 2);
             }
+            drawBmp(SPIFFS, "/EarthSmall.bmp", earthPositionX, earthPositionY);
             break;
           }
         case 2: {
             while (mY > 130) {
-              tft.drawFastHLine(mX, mY + 14, 70, TFT_BLACK);
-              tft.drawFastHLine(mX, mY + 15, 70, TFT_BLACK);
+              delay(2);
+              //              tft.drawFastHLine(mX, mY + 14, 70, TFT_BLACK);
+              //              tft.drawFastHLine(mX, mY + 15, 70, TFT_BLACK);
+              tft.setTextColor(TFT_BLACK);
+              tft.drawString("Temp & Graph", mX + 20, mY, 2);
               mY--;
-              delay(1);
               if (mY < 160 && mY > 150) {
                 tft.drawString("     ", 120, 130, 2);
-                tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+                tft.setTextColor(TFT_DARKGREY);
               } else if (mY < 150 && mY > 145) {
-                tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
+                tft.setTextColor(TFT_MIDDLEGREY);
               } else if (mY < 145 && mY > 137) {
-                tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+                tft.setTextColor(TFT_LIGHTGREY);
               } else {
-                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                tft.setTextColor(TFT_WHITE);
               }
               tft.drawString("Temp & Graph", mX + 20, mY, 2);
             }
+            drawBmp(SPIFFS, "/EarthSmall.bmp", earthPositionX, earthPositionY);
             break;
           }
         case 3: {
             while (mY > 130) {
+              delay(2);
+              tft.setTextColor(TFT_BLACK);
+              tft.drawString("HOME", mX + 20, mY, 2);
               mY--;
-              delay(1);
               if (mY < 160 && mY > 150) {
                 tft.drawString("     ", 120, 130, 2);
-                tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+                tft.setTextColor(TFT_DARKGREY);
               } else if (mY < 150 && mY > 145) {
-                tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
+                tft.setTextColor(TFT_MIDDLEGREY);
               } else if (mY < 145 && mY > 137) {
-                tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+                tft.setTextColor(TFT_LIGHTGREY);
               } else {
-                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                tft.setTextColor(TFT_WHITE);
               }
               tft.drawString("HOME", mX + 20, mY, 2);
             }
+            drawBmp(SPIFFS, "/EarthSmall.bmp", earthPositionX, earthPositionY);
             break;
           }
         case 4: {
             while (mY > 130) {
+              delay(2);
+              tft.setTextColor(TFT_BLACK);
+              tft.drawString("Thermal Cam", mX + 20, mY, 2);
               mY--;
-              delay(1);
               if (mY < 160 && mY > 150) {
                 tft.drawString("     ", 120, 130, 2);
-                tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+                tft.setTextColor(TFT_DARKGREY);
               } else if (mY < 150 && mY > 145) {
-                tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
+                tft.setTextColor(TFT_MIDDLEGREY);
               } else if (mY < 145 && mY > 137) {
-                tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+                tft.setTextColor(TFT_LIGHTGREY);
               } else {
-                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                tft.setTextColor(TFT_WHITE);
               }
               tft.drawString("Thermal Cam", mX + 20, mY, 2);
             }
+            drawBmp(SPIFFS, "/EarthSmall.bmp", earthPositionX, earthPositionY);
             break;
           }
         case 5: {
             while (mY > 130) {
+              delay(2);
+              tft.setTextColor(TFT_BLACK);
+              tft.drawString("Heartrate", mX + 20, mY, 2);
               mY--;
-              delay(1);
               if (mY < 160 && mY > 150) {
                 tft.drawString("     ", 120, 130, 2);
-                tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+                tft.setTextColor(TFT_DARKGREY);
               } else if (mY < 150 && mY > 145) {
-                tft.setTextColor(TFT_MIDDLEGREY, TFT_BLACK);
+                tft.setTextColor(TFT_MIDDLEGREY);
               } else if (mY < 145 && mY > 137) {
-                tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+                tft.setTextColor(TFT_LIGHTGREY);
               } else {
-                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                tft.setTextColor(TFT_WHITE);
               }
               tft.drawString("Heartrate", mX + 20, mY, 2);
             }
+            drawBmp(SPIFFS, "/EarthSmall.bmp", earthPositionX, earthPositionY);
             break;
           }
       }
 
-      if (everyXsecFlag && !notiOn) {
-        tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        tft.setTextDatum(TC_DATUM);
-        tft.setTextPadding(60);
-        tft.drawString(RTCprint, 120, 1, 2);
 
+      //        tft.setTextDatum(TC_DATUM);
+      //        tft.setTextPadding(60);
+      //        tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+      //        tft.drawString(String(SOC), 120, 171, 2);
+      //        tft.drawString(String(socVolts) + "V", 120, 187, 2);
 
-        //        tft.setTextDatum(TC_DATUM);
-        //        tft.setTextPadding(60);
-        //        tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-        //        tft.drawString(String(SOC), 120, 171, 2);
-        //        tft.drawString(String(socVolts) + "V", 120, 187, 2);
-
-      }
-      //      tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      //      tft.setCursor(205, 19);
-      //      FPS = millis() - millisElapsed;
-      //      tft.print(FPS); tft.print("ms  ");
     }
-    switch ( pageCount ) {
-      //      case 0: page0();
-      case 1: page1();
-      //      case 2: page2();
-      case 3: page3();
-      //      case 4: page4();
-      case 5: page5();
-      //      case 6: page6();
-      //      case 7: page7();
-      case 8: page8();
-      case 9: page9();
-    }
+    //      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    //      tft.setCursor(205, 19);
+    //      FPS = millis() - millisElapsed;
+    //      tft.print(FPS); tft.print("ms  ");
   }
+  switch ( pageCount ) {
+    //      case 0: page0();
+    case 1: page1();
+    //      case 2: page2();
+    case 3: page3();
+    //      case 4: page4();
+    case 5: page5();
+    //      case 6: page6();
+    //      case 7: page7();
+    case 8: page8();
+    case 9: page9();
+  }
+}
 }
 
 void page1() {   // Settings / Diagnostics
@@ -292,7 +303,7 @@ void page1() {   // Settings / Diagnostics
     previousTime1 = 0;
 
     while (pageCount == 1) {
-      checkforAlarms();
+      SYSTEM();
       if (!notiOn) {
         everyXsec();
 
@@ -302,7 +313,7 @@ void page1() {   // Settings / Diagnostics
 
         tft.print(WiFi.SSID()); tft.print(" ");
         if (WiFistatus == 3) tft.setTextColor(TFT_MIDDLEGREEN, TFT_BLACK);
-        tft.println(wl_status_to_string(WiFi.status()));
+        tft.println(translate_wl_status(WiFi.status()));
         tft.setTextColor(TFT_WHITE);
         tft.print(WiFi.localIP()); tft.print(" ");
         tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
@@ -650,7 +661,7 @@ void page2() {                     // SD Directories
     tft.setCursor(0, scrollTFT + 55);
 
     while (pageCount == 2) {
-      checkforAlarms();
+      SYSTEM();
       if (!notiOn) {
         drawBmp(SPIFFS, "/car/folder2.bmp", 205, 3);
         everyXsec();
@@ -783,7 +794,7 @@ void page3() {         // System
     tft.drawString("a" + String(Revision), 202, 240, 2);
 
     while (pageCount == 3) {
-      checkforAlarms();
+      SYSTEM();
       if (!notiOn) everyXsec();
 
       tft.setTextSize(1);
@@ -936,8 +947,8 @@ void page4() {  // Graph Page    --     Sensors go into High Speed mode todo: sa
 
     while (pageCount == 4) {
       if (!notiOn) everyXsec();
-      checkforAlarms();
-      
+      SYSTEM();
+
       if (everyXsecFlag) { // print dataPoint every x sec
         // Lvolt = map(Volts, lowVoltAlarm, highVoltAlarm, box2Bottom - 1, box2Top + 1); // value, fromLow, fromHigh, toLow, toHigh
 
@@ -1152,7 +1163,7 @@ void page5() {
     spr.deleteSprite();
 
     while (pageCount == 5) {
-      checkforAlarms();
+      SYSTEM();
       everyXsec();
 
       if (screenState) {
@@ -1246,24 +1257,36 @@ void page5() {
             needle3.fillCircle(needle3.width() / 2, 5, 3, TFT_WHITE); // change color of dial needle
             plotDial3(dial3X, dial3Y, angle, TFT_TRANSPARENT);
 
-            //   tft.drawString(/*String(tempBME, 1) + "C  " + */String(humidHDC, 1) + "%", 120, 16, 2);
-
             tft.setTextColor(TFT_BLACK, TFT_WHITE);
             tft.setTextDatum(TC_DATUM);
             tft.setTextPadding(105);
-            tft.drawString("Temp", 120, 16, 2);
-            tft.drawString("Alt: " + String(altBME) + "m", 120, 207, 2);
+            tft.drawString(String(humidHDC, 1) + "%  " + String(altBME) + "m", 120, 16, 2);
+            //            tft.drawString("Alt: " + String(altBME) + "m", 120, 207, 2);
           }
         }
 
         if (everyXsecFlag && !notiOn) {
           printStatusBar();
+
           tft.setTextDatum(TC_DATUM);
-          tft.setTextPadding(60);
+          tft.setTextPadding(92);
+          //          tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+          byte batMap = map(SOC, 0, 100, 0, 88);
+
+          tft.fillRoundRect(71 + batMap, 211, 93 - batMap, 11, 3, TFT_LIGHTGREY);
+          tft.fillRoundRect(77, 211, batMap, 11, 3, TFT_BATCOLOR);
+          tft.drawRoundRect(77, 210, 88, 12, 3, TFT_LIGHTGREY);
+          tft.drawRoundRect(76, 209, 90, 14, 4, TFT_LIGHTGREY);
           tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-          tft.drawString(BatteryTime, 120, 171, 2);
-          tft.drawString(String(capacityLeft) + "mAh", 120, 187, 2);
+          tft.drawString(BatteryTime + " " + String(capacityLeft / 1000.0, 1) + "Ah", 120, 189, 2);
+          if (SOC > 50) {
+            tft.setTextColor(TFT_LIGHTGREY);
+          } else {
+            tft.setTextColor(TFT_WHITE);
+          }
+          tft.drawString(String(SOC) + "%", 121, 213, 1);
         }
+
         //        tft.setTextPadding(22);
         //        tft.setTextSize(1);
         //        tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
@@ -1293,7 +1316,7 @@ void page6() { // Info CO2
     tft.fillScreen(TFT_BLACK);
     drawBmp(SPIFFS, "/Moon240.bmp", 0, 190); // 154
     //    drawBmp(SPIFFS, "/EarthSmall.bmp", 167, 180);
-    drawBmp(SPIFFS, "/car/airround.bmp", 200, 10);
+    drawBmp(SPIFFS, "/car/mountain.bmp", 200, 8);
 
     edgeL = 6;
     tft.setTextSize(1);
@@ -1326,7 +1349,7 @@ void page6() { // Info CO2
 
 
     while (pageCount == 6) {
-      checkforAlarms();
+      SYSTEM();
       if (!notiOn) {
         everyXsec();
 
@@ -1365,7 +1388,7 @@ void page7() {   // Info tVOC
     tft.fillScreen(TFT_BLACK);
 
     drawBmp(SPIFFS, "/Moon240.bmp", 0, 190); // 154
-    drawBmp(SPIFFS, "/car/airround.bmp", 200, 10);
+    drawBmp(SPIFFS, "/car/mountain.bmp", 200, 8);
 
     tft.setTextSize(1);
     tft.setTextColor(TFT_BLACK);
@@ -1400,7 +1423,7 @@ void page7() {   // Info tVOC
     //    tft.drawString("", edgeL, 219, 2);
 
     while (pageCount == 7) {
-      checkforAlarms();
+      SYSTEM();
       if (!notiOn) {
         everyXsec();
         tft.setTextSize(1);
@@ -1448,7 +1471,7 @@ void page8() {     // Thermal Cam
       if (loggingActive) appendFile(SD, LogFile, "\nThermal Cam Measuring...\n");
 
       while (pageCount == 8) {
-        checkforAlarms();
+        SYSTEM();
 
         tft.setTextDatum(BC_DATUM);
         tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -1666,7 +1689,7 @@ void page8() {     // Thermal Cam
       tft.drawString("Thermal Camera Offline", 120, 140, 2);
       drawBmp(SPIFFS, "/car/error.bmp", 105, 85);
       while (pageCount == 8) {
-        checkforAlarms();
+        SYSTEM();
         everyXsec();
         notiWarnings();
         wifiPrint();
@@ -1718,7 +1741,7 @@ void page9() {     // MAX30105 HRO2 particle
         if (millis() - count > 1000) {
           //          everyXsecFlag = true;
           count = millis();
-          checkforAlarms();
+          SYSTEM();
         }
 
         //      wifiPrint();
@@ -1821,7 +1844,7 @@ void page9() {     // MAX30105 HRO2 particle
       drawBmp(SPIFFS, "/car/error.bmp", 105, 85);
       tft.drawString("HeartRate Sensor Offline", 120, 140, 2);
       while (pageCount == 9) {
-        checkforAlarms();
+        SYSTEM();
         everyXsec();
         notiWarnings();
         wifiPrint();

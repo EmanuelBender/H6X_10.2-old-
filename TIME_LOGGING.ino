@@ -25,29 +25,12 @@ void Time(tm localTime) {
     se = localTime.tm_sec;
     dow = now.dayOfTheWeek();
   */
-  RTClogfile = "";
-  RTClogfile = "/" + String(da) + "." + String(mo) + "." + String(yr) + ".txt";
-  RTClogfile.toCharArray(LogFile, 16);
-
-  RTCt = "";
-  RTCt += "\n";
-  if (hr <= 9) {
-    RTCt += "0";
-  }
-  RTCt += String(hr) + ":";
-  if (mi <= 9) {
-    RTCt += "0";
-  }
-  RTCt += String(mi) + ":";
-  if (se <= 9) {
-    RTCt += "0";
-  }
-  RTCt += String(se);
-  RTCt += ", ";
-  RTCt.toCharArray(RTClog, 13);
-
   RTCd = "";
   RTCd += String(da) + "." + String(mo) + "." + String(yr);
+
+  RTClogfile = "";
+  RTClogfile = "/" + RTCd + ".txt";
+  RTClogfile.toCharArray(LogFile, 16);
 
   RTCprint = "";
   if (hr <= 9) {
@@ -62,6 +45,13 @@ void Time(tm localTime) {
     RTCprint += "0";
   }
   RTCprint += String(se);
+
+
+  RTCt = "";
+  RTCt += "\n";
+  RTCt += RTCprint;
+  RTCt += ", ";
+  RTCt.toCharArray(RTClog, 13);
 }
 
 
@@ -116,8 +106,10 @@ void Logging() {
     if (deepSleepActive) {
       SDdata += "1";
     } else {
-      SDdata += "0";
+      SDdata += "0, ";
     }
+
+    SDdata   += translate_wl_status(WiFi.status());
 
     appendFile(SD, LogFile, SDdata.c_str());
   }

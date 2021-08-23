@@ -1,6 +1,6 @@
 #include <pgmspace.h>
 
-void IRAM_ATTR buttonInterrupt1() {
+void buttonInterrupt1() {
   TFTon();
   if (pageCount == 0) {
     menuCar--;
@@ -10,7 +10,7 @@ void IRAM_ATTR buttonInterrupt1() {
   }
 }
 
-void IRAM_ATTR buttonInterrupt2() {
+void buttonInterrupt2() {
   TFTon();
   if (pageCount == 0) {
     menuCar++;
@@ -100,11 +100,11 @@ void doubleClick() {    // double Click
         break;
       }
     case 2: scrollTFT += 30; break;
-    case 3: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
-    case 4: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
-    case 5: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
-    case 6: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
-    case 7: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; putPersistentBool("loggingActive", loggingActive); break;
+    case 3: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; flag = true; break;
+    case 4: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; flag = true; break;
+    case 5: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; flag = true; break;
+    case 6: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; flag = true; break;
+    case 7: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; flag = true; break;
     case 8: measurePoint = !measurePoint; amgSetHiRes = !amgSetHiRes; break;
     case 9: {
         irOffset += 5;
@@ -114,6 +114,7 @@ void doubleClick() {    // double Click
       }
   }
 }
+
 
 
 void IRAM_ATTR buttonISR() {

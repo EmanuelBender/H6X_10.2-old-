@@ -165,10 +165,10 @@ void drawBmp(fs::FS & fs, const char *filename, int16_t x, int16_t y) {
   bmpFS.close();
 }
 
-void putPersistentBool(String path, bool state) {
-  path.toCharArray(charArr, 14);
+void putPersistentBool(const char* path, bool state) {
+  //  path.toCharArray(charArr, 12);
   preferences.begin("my - app", false);
-  preferences.putBool(charArr, state); // store to Preferences
+  preferences.putBool(path, state); // store to Preferences
   preferences.end();
 }
 
@@ -317,34 +317,29 @@ void verbose_print_reset_reason(RESET_REASON reason)
   }
 }
 
-String translateEncryptionType(wifi_auth_mode_t encryptionType) {
+
+const char* translateEncryptionType(wifi_auth_mode_t encryptionType) {
 
   switch (encryptionType) {
-    case (WIFI_AUTH_OPEN):
-      return "Open";
-    case (WIFI_AUTH_WEP):
-      return "WEP";
-    case (WIFI_AUTH_WPA_PSK):
-      return "WPA";
-    case (WIFI_AUTH_WPA2_PSK):
-      return "WPA2";
-    case (WIFI_AUTH_WPA_WPA2_PSK):
-      return "WPA1_2";
-    case (WIFI_AUTH_WPA2_ENTERPRISE):
-      return "WPA2_E";
+    case WIFI_AUTH_OPEN:            return "Open";
+    case WIFI_AUTH_WEP:             return "WEP";
+    case WIFI_AUTH_WPA_PSK:         return "WPA";
+    case WIFI_AUTH_WPA2_PSK:        return "WPA2";
+    case WIFI_AUTH_WPA_WPA2_PSK:    return "WPA1_2";
+    case WIFI_AUTH_WPA2_ENTERPRISE: return "WPA2_E";
   }
 }
 
-const char* wl_status_to_string(wl_status_t status) {
+const char* translate_wl_status(wl_status_t status) {
   switch (status) {
-    case WL_NO_SHIELD: return "NO_SHIELD";
-    case WL_IDLE_STATUS: return "IDLE_STATUS";
-    case WL_NO_SSID_AVAIL: return "NO_SSID";
-    case WL_SCAN_COMPLETED: return "SCAN_COMPLETE";
-    case WL_CONNECTED: return "CONNECTED";
-    case WL_CONNECT_FAILED: return "CONNECT_FAILED";
+    case WL_NO_SHIELD:       return "NO_SHIELD";
+    case WL_IDLE_STATUS:     return "IDLE_STATUS";
+    case WL_NO_SSID_AVAIL:   return "NO_SSID";
+    case WL_SCAN_COMPLETED:  return "SCAN_COMPLETE";
+    case WL_CONNECTED:       return "CONNECTED";
+    case WL_CONNECT_FAILED:  return "CONNECT_FAILED";
     case WL_CONNECTION_LOST: return "CONNECT_LOST";
-    case WL_DISCONNECTED: return "DISCONNECTED";
+    case WL_DISCONNECTED:    return "DISCONNECTED";
   }
 }
 
@@ -474,6 +469,8 @@ void get_adjacents_2d(float *src, float *dest, uint8_t rows, uint8_t cols, int8_
   }
 }
 
+
+// UI Stuff:
 void menuIcons() {
   drawBmp(SPIFFS, icon3, carX3, 89);
   drawBmp(SPIFFS, icon2, carX2, 89);
@@ -481,7 +478,6 @@ void menuIcons() {
   drawBmp(SPIFFS, icon1, carX1, 89);
   drawBmp(SPIFFS, icon5, carX5, 89);
 }
-
 
 void createDialScale(int16_t start_angle, int16_t end_angle, int16_t increment) {
   // Create the dial Sprite
@@ -511,7 +507,6 @@ void createNeedle(void) {
   // Keep needle tip 1 pixel inside dial circle to avoid leaving stray pixels
   needle.fillCircle(piv_x, 5, 3, TFT_WHITE); // change y for moving sprite in /out
 }
-
 
 void createDialScale2(int16_t start_angle, int16_t end_angle, int16_t increment) {
   // Create the dial Sprite
@@ -558,7 +553,7 @@ void createDialScale3(int16_t start_angle, int16_t end_angle, int16_t increment)
 void plotDial3(int16_t x, int16_t y, uint16_t a, int32_t bgcolor) {
   // Push a rotated needle Sprite to the dial Sprite, with black as transparent colour
   needle3.pushRotated(&dial3, a, bgcolor); // dial is the destination Sprit
-  dial3.drawString(String(tempBME, 0) + "C", 36, 32, 2);
+  dial3.drawString(String(tempBME, 1) + "C", 36, 32, 2);
   dial3.pushSprite(x, y, TFT_TRANSPARENT);
 }
 
@@ -597,7 +592,7 @@ uint16_t uviColor() {
   }
 }
 
-/*
+/*    Other Method to display 565 color space for AMG8833
   uint16_t GetColor(float val) {
 
   //    https://github.com/KrisKasprzak
@@ -653,7 +648,7 @@ uint16_t uviColor() {
 */
 
 /*
-  int fanSpeed() {
+  byte fanSpeed() {
 
   const byte maxMeasurements = 8;
   int myMeasurements[maxMeasurements] = {t1, t2, t3, t4, t5, t6, t7, t8};
@@ -668,7 +663,7 @@ uint16_t uviColor() {
       maxIndex = i;
     }
   }
-  fanPWM = map(maxValue, 20, 60, 0, 255); // mapping highest sensor temp from 20-60C to 0-255 for fan speed
+  fanPWM = constrain(map(maxValue, 40, 80, 0, 255),0 , 255); // mapping highest sensor temp from 40-80C to 0-255 for fan speed
 
   return fanPWM;
   } */

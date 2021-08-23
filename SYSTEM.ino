@@ -2,20 +2,26 @@
 
 void everyXsec() {
 
+  if (powerAlarm || tempAlarm || wetAlarm) { // for Logging Timing: normal operation - every X sec. In Alarm state - continuous
+    Logging();
+  } else if (everyXsecFlag) {
+    Logging();
+  }
+
   if (everyXsecFlag) everyXsecFlag = false;     // Code that runs every X ms - 1 SEC
   if (millisElapsed - previousMs > everyXms) {
     previousMs = millis();
     everyXsecFlag = true;
 
-    Logging();
     readUV();  // VEML6075 Combined UV-A, UV-B Readings
     Time(timeinfo); // update Time
 
     WiFiRSSI = WiFi.RSSI();
     CCS811err = myCCS811.checkForStatusError();
 
+    if (flag) putPersistentBool("loggingActive", loggingActive); flag = false;
 
-    if (deepSleepActive) {
+    if (deepSleepActive && !!screenState) {
       gotoDeepSleep();
     }
 
@@ -114,13 +120,13 @@ void everyXsec() {
 
 void smlCarousel() {
   switch ( count ) {
-    case 0 ... 2: smlPRNT2(String(hr) + ":" + String(mi), String(RTCd), -17, -10); break;
-    case 3:       smlPRNT(String(SOC) + "%", "BATTERY", -8, -20); break;
+    case 0 ... 2: smlPRNT(String(RTCprint),   "", -65, -15); break;  // Line 1, Line 2, Offset X1, Offset X2
+    case 3:       smlPRNT(String(SOC) + "%",   "BATTERY", -8, -20); break;
     case 4:       smlPRNT(String(tempSCD, 0),  "TEMP", 3, -1); break;
-    case 5:       smlPRNT(String(UVI),         "UV INDEX", 0, -32); break;
-    case 6:       smlPRNT(String(AirQI),       "AirQI", 16, -7); break;     // smlPRNT(String(steps), "STEPS", 16, -8); break;
+    case 5:       smlPRNT(String(UVI),         "UV INDEX", 16, -32); break;
+    case 6:       smlPRNT(String(AirQI),       "AirQI", 15, -7); break;     // smlPRNT(String(steps), "STEPS", 16, -8); break;
     case 7:       smlPRNT2(String(co2SCD),     String(co2CCS), -9, 2); count = 0; break;
-      //    default: count = 0; break;
+    default: count = 0; break;
   }
   count++;
 }
@@ -134,14 +140,15 @@ void smlCarousel() {
    smlPRNT(String(tvocCCS), "VOC", 0);
 */
 
-void checkforAlarms() {
+void SYSTEM() {
 
   millisElapsed = millis();
 
-  Warnings();     // updating Warnings & triggering Alarms
+  readSystemPower();
+  Warnings();          // updating Warnings & triggering Alarms
   //   readIMU();      // MPU9250 IMU Readings and Step Counter
 
-  if (alarmEnable && powerAlarm || tempAlarm) {
+  if (alarmEnable && powerAlarm || tempAlarm) {   // Alarm Page & low power down
     cycleCount = 0;
     tft.fillScreen(TFT_BLACK);
     tft.setTextPadding(152);
@@ -156,9 +163,10 @@ void checkforAlarms() {
       millisElapsed = millis();
       everyXsec();
       Warnings();
+      readSystemPower();
       readEnvironmentData();
       printStatusBar();
-      panicLog();
+      //      panicLog();
       TFTon();
 
       cycleCount++;
@@ -250,8 +258,6 @@ void checkforAlarms() {
 
 void Warnings() {
 
-  readSystemPower();
-
   if (t1 > tA1 || t2 > tA2 || t3 > tA3 || t4 > tA4 || t5 > tA5 || t6 > tA6 || t7 > tA7 || t8 > tA8 ||
       Amps > ampsFanTH ||     // Fan Activation when Temp Warning or CurrentTH
       chargingActive ||
@@ -305,7 +311,7 @@ void Warnings() {
   }
 }
 
-void notification(String line1, String line2, bool notiFlag, byte alarmType, long int tS) {
+void notification(String line1, String line2, bool notiFlag, byte alarmType, long int tS) { // notification function
 
   if (notiFlag) {
     tft.setTextDatum(TL_DATUM);
@@ -318,8 +324,8 @@ void notification(String line1, String line2, bool notiFlag, byte alarmType, lon
       tft.fillRoundRect(10, notiY - 4, 220, 10, 8, TFT_BLACK);
       tft.fillRoundRect(10, notiY, 220, 60, 8, TFT_DARKGREY);
       tft.setTextColor(TFT_WHITE);
-      tft.drawString(line1, 20, notiY + 22, 4);
-      tft.drawString(line2, 20, notiY + 38, 4);
+      tft.drawString(line1, 20, notiY + 22, 2);
+      tft.drawString(line2, 20, notiY + 38, 2);
       switch ( alarmType ) {
         case 0: drawBmp(SPIFFS, "/inactive12.bmp", 18, notiY + 7); break;
         case 1: drawBmp(SPIFFS, "/warnRoundW12.bmp", 19, notiY + 6); break;
@@ -328,8 +334,8 @@ void notification(String line1, String line2, bool notiFlag, byte alarmType, lon
       }
     } else if (notiY == 20 && millisElapsed - tS < 3000) {
       tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
-      tft.drawString(line1, 20, notiY + 22, 4);
-      tft.drawString(line2, 20, notiY + 38, 4);
+      tft.drawString(line1, 20, notiY + 22, 2);
+      tft.drawString(line2, 20, notiY + 38, 2);
       switch ( alarmType ) {
         case 0: drawBmp(SPIFFS, "/inactive12.bmp", 18, notiY + 7); break;
         case 1: drawBmp(SPIFFS, "/warnRoundW12.bmp", 19, notiY + 6); break;
@@ -342,8 +348,8 @@ void notification(String line1, String line2, bool notiFlag, byte alarmType, lon
         tft.fillRoundRect(10, notiY + 50, 220, 20, 8, TFT_BLACK);
         tft.fillRoundRect(10, notiY, 220, 60, 8, TFT_DARKGREY);
         tft.setTextColor(TFT_WHITE);
-        tft.drawString(line1, 20, notiY + 22, 4);
-        tft.drawString(line2, 20, notiY + 38, 4);
+        tft.drawString(line1, 20, notiY + 22, 2);
+        tft.drawString(line2, 20, notiY + 38, 2);
         switch ( alarmType ) {
           case 0: drawBmp(SPIFFS, "/inactive12.bmp", 18, notiY + 7); break;
           case 1: drawBmp(SPIFFS, "/warnRoundW12.bmp", 19, notiY + 6); break;
@@ -377,7 +383,7 @@ void notification(String line1, String line2, bool notiFlag, byte alarmType, lon
   }
 }
 
-void notiWarnings() {
+void notiWarnings() {      // Notification Organizer
 
   if (fanActive && millisElapsed - notiTimestampF > 60010) { // Rising Edge
     notiTimestampF = millisElapsed;
@@ -409,48 +415,46 @@ void notiWarnings() {
     nWetFlag = true;
   }
 
-  if (nFanFlag || nAirFlag || nTempFlag || nLedFlag || nWetFlag) {
-    notiOn = true;
-  }
+  if (nFanFlag || nAirFlag || nTempFlag || nLedFlag || nWetFlag) notiOn = true;
 
   notification("High Temperature Detected", high_temp_message, nFanFlag, 1, notiTimestampF);
   notification("Air Quality Warning", "Index: " + String(AirQI), nAirFlag, 2, notiTimestampA);
-  notification("LED is at " + String(map(ledB, 0, 255, 0, 100)) + "% ", "LED Temp: " + String(t3) + " C", nLedFlag, 0, notiTimestampL);
-  notification("Water Ingress Detected", "SHUT OFF device immediately!!!", nWetFlag, 3, notiTimestampW);
-  //  notification("Temperature", "", nTempFlag, 3, notiTimestampT);
+  notification("LED is at " + String(map(ledB, 0, 255, 0, 100)) + "% ", "LED Temp: " + String(t7) + " C", nLedFlag, 0, notiTimestampL);
+  notification("Water Ingress Detected", "SHUT OFF POWER NOW", nWetFlag, 3, notiTimestampW);
+  //  notification("Temperature", "", nTempFlag, 2, notiTimestampT);
+  //  notification("Battery Low", "Battery is at" + String(SOC) + "%", nBatFlag, 2, notiTimestampB);
+  //  notification("Battery Almost Empty", "Battery is at" + String(SOC) + "%", nBatFlag2, 2, notiTimestampB2);
 }
 
 
-
-void smlPRNT(String sensor, const char* text, int x, int x2) { // sml print data
+void smlPRNT(String val1, const char* message, int x, int x2) { // small 0,94" OLED screen print data funtions
   u8g2.clearBuffer();     // clear the internal memory
-  sensor.toCharArray(charArr, 9);
+  val1.toCharArray(charArr, 9);
 
   u8g2.setFont(u8g2_font_logisoso20_tf);
   u8g2.drawStr((u8g2.getStrWidth(charArr) / 2) + 32 + x, 24, charArr);
 
   u8g2.setFont(u8g2_font_chroma48medium8_8r); // choose a suitable font
-  u8g2.drawStr((u8g2.getStrWidth(text) / 2) + 32 + x2, 32, text); // write something to the internal memory
+  u8g2.drawStr((u8g2.getStrWidth(message) / 2) + 32 + x2, 32, message);
 
   u8g2.sendBuffer();     // transfer internal memory to the display
 }
 
-void smlPRNT2(String val1, String val2, int x, int x2) {
+void smlPRNT2(String val1, String val2, int x, int x2) { // small 0,94" OLED screen print data funtions
   u8g2.clearBuffer();     // clear the internal memory
   val1.toCharArray(charArr, 9);
+
   u8g2.setFont(u8g2_font_logisoso18_tn);
-  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x, 20, charArr); // write something to the internal memory
+  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x, 20, charArr);
 
   val2.toCharArray(charArr, 9);
   u8g2.setFont(u8g2_font_helvR10_tn);
-  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x2, 32, charArr); // write something to the internal memory
+  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x2, 32, charArr);
 
   u8g2.sendBuffer();     // transfer internal memory to the display
 }
 
-
-void smlCHRG() {
-  //  tft.drawNumber(count, 20, 50, 2);
+void smlCHRG() {    // have never tested this
   u8g2.clearBuffer();     // clear the internal memory
   u8g2.setFont(u8g2_font_battery19_tn); // 8 x 19
 
@@ -486,28 +490,13 @@ void smlICON(const char *message) {
   u8g2.sendBuffer();
 }
 
-void gotoDeepSleep() {
+
+void gotoDeepSleep() {  // send Device to Sleep
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
   putPersistentBool("loggingActive", loggingActive);
+  powerOffPeripherals();
 
-  Wire.beginTransmission(0x69);   //  AMG8833 Modes   0x00 - Normal, 0x10 - Sleep, 0x20 - 60sec, 0x21 - 10sec
-  Wire.write(0x00);   // Register
-  Wire.write(0x10);   // Value to Register
-  Wire.endTransmission();
-
-  ledcWrite(1, 0);
-  TFToff();
-  u8g2.clearBuffer();
-  u8g2.sleepOn();
-
-  ina260.setAveragingCount(INA260_COUNT_128); // 128 * 8.2ms = 1.05sec
-  ina260.setVoltageConversionTime(INA260_TIME_8_244_ms); // 140_us, 204_us, 332_us, 558_us, 1_1_ms,
-  ina260.setCurrentConversionTime(INA260_TIME_8_244_ms);
-  //  ina260.setMode(INA260_MODE_SHUTDOWN);
-  myCCS811.setDriveMode(0); // IDLE
-  scd30.StopMeasurement();
-  MAX30105.shutDown();
-  myBME280.setMode(0);
-  VML.shutdown();
   //  rtc_gpio_init(GPIO_NUM_17); //initialize the RTC GPIO port
   //  rtc_gpio_init(GPIO_NUM_27); //initialize the RTC GPIO port
   //  rtc_gpio_init(GPIO_NUM_26); //initialize the RTC GPIO port
@@ -525,15 +514,37 @@ void gotoDeepSleep() {
   rtc_gpio_hold_en(GPIO_NUM_27); // tftBLK
   rtc_gpio_hold_en(GPIO_NUM_26); // fan
   //  gpio_deep_sleep_hold_en();
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  btStop();
-  esp_bt_controller_disable();
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_2, 1); // 1 = High, 0 = Low, 2,4,35
   //  if (powerAlarm) sleepWakeupTime += (3600 * uS_TO_S_FACTOR);
   esp_sleep_enable_timer_wakeup(sleepWakeupTime * uS_TO_S_FACTOR);
   esp_deep_sleep_start();
 }
+
+void powerOffPeripherals() {  // turning everything off or into low power mode
+
+  ledcWrite(1, 0);
+  TFToff();
+  u8g2.clearBuffer();
+  u8g2.sleepOn();
+
+  Wire.beginTransmission(0x69);   //  AMG8833 Modes   0x00 - Normal, 0x10 - Sleep, 0x20 - 60sec, 0x21 - 10sec
+  Wire.write(0x00);   // Register
+  Wire.write(0x10);   // Value to Register
+  Wire.endTransmission();
+
+  ina260.setAveragingCount(INA260_COUNT_128); // 128 * 8.24ms = 1.05sec ?
+  ina260.setVoltageConversionTime(INA260_TIME_8_244_ms); // 140_us, 204_us, 332_us, 558_us, 1_1_ms,
+  ina260.setCurrentConversionTime(INA260_TIME_8_244_ms);
+  //  ina260.setMode(INA260_MODE_SHUTDOWN);
+  myCCS811.setDriveMode(0); // IDLE
+  scd30.StopMeasurement();
+  MAX30105.shutDown();
+  myBME280.setMode(0);
+  VML.shutdown();
+  btStop();
+  esp_bt_controller_disable();
+}
+
 
 void TFToff() {
   screenState = 0;
@@ -545,6 +556,7 @@ void TFTon() {
   screenState = 1;
   checkScreenState();
 }
+
 
 void checkScreenState() {
 
@@ -564,13 +576,12 @@ void checkScreenState() {
   }
 }
 
-
 void printStatusBar() {
 
   drawBmp(SPIFFS, "/batLine.bmp", batX, 2);
 
   if (chargingActive) {
-    TFT_BATCOLOR = TFT_GREEN;
+    TFT_BATCOLOR = TFT_DARKGREEN;
   } else if (lowPowerMode) {
     TFT_BATCOLOR = TFT_YELLOW;
   } else {
@@ -599,6 +610,13 @@ void printStatusBar() {
   } else if (SOC < 10 && SOC > 0) {
     if (!chargingActive) TFT_BATCOLOR = TFT_RED;
     tft.fillRect(batX + 1, 6, 1, 4, TFT_BATCOLOR);
+  }
+
+  if (pageCount == 0 && everyXsecFlag && !notiOn) {
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setTextDatum(TC_DATUM);
+    tft.setTextPadding(60);
+    tft.drawString(RTCprint, 120, 1, 2);
   }
 
   if (pageCount == 3) { // print minElapsed & Lamp Icon
@@ -655,25 +673,45 @@ void printStatusBar() {
     tft.fillRect(38, 2, 12, 12, TFT_BLACK);
   }
 
-  if (fanActive) {
-    drawBmp(SPIFFS, "/fan12.bmp", 56, 2);
-    //    tft.pushImage(44, 2, 12, 12, fan12);
-    //    if (SDpresent) drawBmp("/UI/fan12.bmp", 44, 2);   // 24bit
-  } else {
-    tft.fillRect(56, 2, 12, 12, TFT_BLACK);
-  }
+  if (pageCount != 5) {
+    if (fanActive) {
+      drawBmp(SPIFFS, "/fan12.bmp", 56, 2);
+      //    tft.pushImage(44, 2, 12, 12, fan12);
+      //    if (SDpresent) drawBmp("/UI/fan12.bmp", 44, 2);   // 24bit
+    } else {
+      tft.fillRect(56, 2, 12, 12, TFT_BLACK);
+    }
 
-  if (deepSleepActive) {
-    drawBmp(SPIFFS, "/sleep12.bmp", 75, 2);
-    //    tft.pushImage(60, 2, 12, 12, sleep12);
-    //    if (SDpresent) drawBmp("/UI/sleep12.bmp", 60, 2);   // 24bit
-  } else {
-    tft.fillRect(75, 2, 12, 12, TFT_BLACK);
+    if (deepSleepActive) {
+      drawBmp(SPIFFS, "/sleep12.bmp", 75, 2);
+      //    tft.pushImage(60, 2, 12, 12, sleep12);
+      //    if (SDpresent) drawBmp("/UI/sleep12.bmp", 60, 2);   // 24bit
+    } else {
+      tft.fillRect(75, 2, 12, 12, TFT_BLACK);
+    }
   }
 
   if (pageCount == 5) {
+
+    if (fanActive) {
+      drawBmp(SPIFFS, "/fan12.bmp", 114, 135);
+      //    tft.pushImage(44, 2, 12, 12, fan12);
+      //    if (SDpresent) drawBmp("/UI/fan12.bmp", 44, 2);   // 24bit
+    } else {
+      tft.fillRect(114, 135, 12, 12, TFT_BLACK);
+    }
+
+    if (deepSleepActive) {
+      drawBmp(SPIFFS, "/sleep12.bmp", 114, 154);
+      //    tft.pushImage(60, 2, 12, 12, sleep12);
+      //    if (SDpresent) drawBmp("/UI/sleep12.bmp", 60, 2);   // 24bit
+    } else {
+      tft.fillRect(114, 154, 12, 12, TFT_BLACK);
+    }
+
+
     if (airWarning) {
-      drawBmp(SPIFFS, "/warnRoundR12.bmp", 197, 115);
+      drawBmp(SPIFFS, "/AIR12.bmp", 197, 115);
       //    tft.pushImage(3, 22, 12, 12, warn12);
       //    if (SDpresent) drawBmp(SD, "/UI/warn12.bmp", 3, 22);
     } else {
@@ -681,7 +719,7 @@ void printStatusBar() {
     }
 
     if (uvWarning) {
-      drawBmp(SPIFFS, "/warnRoundY12.bmp", 33, 115);
+      drawBmp(SPIFFS, "/UV12.bmp", 33, 115);
       //    tft.pushImage(3, 22, 12, 12, warn12);
       //    if (SDpresent) drawBmp(SD, "/UI/warn12.bmp", 3, 22);
     } else {
@@ -689,9 +727,9 @@ void printStatusBar() {
     }
 
     if (ledBon) {
-      drawBmp(SPIFFS, "/lampon.bmp", 111, 147);
-    } else if (!ledBon && pageCount == 5) {
-      drawBmp(SPIFFS, "/lamp.bmp", 111, 147);
+      drawBmp(SPIFFS, "/lampon.bmp", 213, 218); // drawBmp(SPIFFS, "/lamp.bmp", 111, 147);
+    }  else {
+      tft.fillRect(213, 218, 21, 21, TFT_BLACK);
     }
   }
 }

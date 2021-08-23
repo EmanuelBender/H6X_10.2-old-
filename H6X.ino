@@ -21,13 +21,14 @@
   SCD30      - 0x61 - Nathan Seidle @ Sparkfun Electronics
   INA260     - 0x41 - Adafruit Industries
   DS3231     - 0x68 - Adafruit Industries - fork of JeeLabs RTC Library
-  MPU9250    - 0x69 - (I2C Bus 2) - asukiaaa Asuki Kono, kevinlhoste, josephlarralde joseph
+  (not installed) MPU9250    - 0x69 - (I2C Bus 2) - asukiaaa Asuki Kono, kevinlhoste, josephlarralde joseph
 
   Bugs/Issues:
     VEML6075 broken?
+    electronic paths too weak? (breadboard)
   ========================================================================================*/
 
-#define Revision "10.0" // Alpha Stage
+#define Revision "10.1" // Alpha Stage
 
 #include <Arduino.h>
 #include <Credentials.h>
@@ -150,9 +151,9 @@ byte    tftBKLmax = 255;
 
 #define pwmfreq 20000
 #define pwmresolution 12
-byte ledB = 0;
-bool ledBon;
+byte ledB    = 0;
 byte ledBmax = 255;
+bool ledBon;
 
 #define SDA1 21
 #define SCL1 22
@@ -182,7 +183,7 @@ int     Svolt, Bvolt, Lvolt, currA, powMW, lastpowMW;
 int     TFT_BATCOLOR;
 byte    INAmode;
 float   batDayLeft, batHourLeft;
-byte    batMinuteLeft;
+int     batMinuteLeft;
 int     capacityLeft;
 int     ampsAvg  = 10;
 int     voltsAvg = 6400;
@@ -245,18 +246,18 @@ long       lastBeat  = 0;
 float      beatsPerMinute;
 uint8_t    beatAvg;
 
-int     lastIR    = 0;
-int     lastO2    = 0;
-int     i         = 0;
-int     m         = 0;
-byte    Num       = 10;   //  50 calculate SpO2 by this sampling interval
-double  ESpO2     = 90.0; // initial value of estimated SpO2
-double  FSpO2     = 0.7;  // filter factor for estimated SpO2
-double  frate     = 0.95; // 0.95 low pass filter for IR/red LED value to eliminate AC component
-double  avered    = 0;
-double  aveir     = 0;
-double  sumirrms  = 0;
-double  sumredrms = 0;
+int      lastIR    = 0;
+int      lastO2    = 0;
+int      i         = 0;
+int      m         = 0;
+byte     Num       = 10;   //  50 calculate SpO2 by this sampling interval
+double   ESpO2     = 90.0; // initial value of estimated SpO2
+double   FSpO2     = 0.7;  // filter factor for estimated SpO2
+double   frate     = 0.95; // 0.95 low pass filter for IR/red LED value to eliminate AC component
+double   avered    = 0;
+double   aveir     = 0;
+double   sumirrms  = 0;
+double   sumredrms = 0;
 
 Adafruit_AMG88xx amg;         //   AMG8833
 byte     redAMG, greenAMG, blueAMG;
@@ -295,10 +296,10 @@ char       LogFile[16];        // char & Strings
 char       RTClog[13];
 uint8_t    yr, mo, da, hr, mi, se, dow;
 char       daysOfTheWeek[7][12] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-String     RTCt       = ""; // RTC time
-String     RTCd       = ""; // RTC date
-String     RTCprint   = "";
-String     RTClogfile = "";
+String     RTCt       = ""; // RTC time logging
+String     RTCd       = ""; // RTC date logging
+String     RTCprint   = ""; // HH:MM:SS stamp
+String     RTClogfile = ""; // '/dd.mm.yy.txt'
 
 String    ledBprint, currentLine, envData, PowerLog, tempProbes, dateString;
 
@@ -309,7 +310,7 @@ byte      count = 0;
 uint16_t  FPS;
 const long uS_TO_S_FACTOR = 1000000;
 
-#define SDLOGHEAD "\nTime, Date, Bat %, Bat V, Amps, Watts, t1, t2, t3, t4, t5, t6, t7, t8, CO2, CO2(CCS), tVOC, Temp, RH, Alt, Press, UV, Backlight, Fan, LED, Low Power, Deep Sleep\n"
+#define SDLOGHEAD "\nTime, Date, Bat %, Bat V, Amps, Watts, t1, t2, t3, t4, t5, t6, t7, t8, CO2, CO2(CCS), tVOC, Temp, RH, Alt, Press, UV, Backlight, Fan, LED, Low Power, Deep Sleep, WiFi\n"
 
 //  MPU9250_asukiaaa IMU;
 //  float    aX, aY, aZ, aSqrt, gX, gY, gZ, mDirection, mX, mY, mZ;
@@ -354,8 +355,8 @@ const char *TZ_INFO = "CET-1CEST,M3.5.0,M10.5.0/3"; //  CET-1CEST,M3.5.0,M10.5.0
 tm timeinfo;
 time_t now;
 
-void IRAM_ATTR buttonInterrupt1();
-void IRAM_ATTR buttonInterrupt2();
+void buttonInterrupt1();
+void buttonInterrupt2();
 EasyButton button(tPAD3);
 void buttonPressed();
 void sequenceEllapsed();
@@ -365,9 +366,9 @@ void buttonISR();
 void setup() //==================================== SETUP =========================================
 {
   //  Serial.begin(115200);
-  //  delay(800);
   tft.fillScreen(TFT_BLACK);
   tft.begin();
+  delay(5);
 
   //  spr.setColorDepth(16);
   createDialScale(0, 180, 1);   // create scale (start angle, end angle, increment angle)
@@ -409,6 +410,7 @@ void setup() //==================================== SETUP ======================
 
   Wire.begin(SDA1, SCL1, I2C_SPEED_FAST);
   //  Wire1.begin(SDA2, SCL2, I2C_SPEED_FAST);
+  delay(2);
 
   preferences.begin("my - app", false);
   counter = preferences.getUInt("counter", 0);    // persistent Preferences
@@ -452,7 +454,7 @@ void setup() //==================================== SETUP ======================
   } else {
     i = random(1, 14);
     if (i == 1) drawBmp(SD, "/UI/nasa240.bmp", 0, 0);
-    if (i == 2) drawBmp(SD, "/UI/nasab240.bmp", 0, 0);
+    if (i == 2) drawBmp(SD, "/UI/NASAretro.bmp", 0, 0);
     if (i == 3) drawBmp(SD, "/UI/NasaWorm240.bmp", 0, 0);
     if (i == 4) drawBmp(SD, "/UI/Curiosity240.bmp", 0, 0);
     if (i == 5) drawBmp(SD, "/UI/deathstar240.bmp", 0, 0);
@@ -464,8 +466,8 @@ void setup() //==================================== SETUP ======================
     if (i == 11) drawBmp(SD, "/UI/EarthNight240.bmp", 0, 0);
     if (i == 12) drawBmp(SD, "/UI/github240.bmp", 0, 0);
     if (i == 13) drawBmp(SD, "/UI/NASAretro.bmp", 0, 0);
-    if (i == 14) drawBmp(SD, "/UI/NASAretro.bmp", 0, 0);
-    if (i == 1 || i == 2 || i == 4 || i == 5 || i == 6 || i == 12 || i == 13 || i == 14) {
+    //    if (i == 14) drawBmp(SD, "/UI/nasab240.bmp", 0, 0);
+    if (i == 1 || i == 2 || i == 4 || i == 5 || i == 6 || i == 12 || i == 13) {
       tft.drawString("DON'T PANIC", TFT_WIDTH / 2, 198, 4);
     }
     i = 0;
@@ -489,14 +491,13 @@ void setup() //==================================== SETUP ======================
     if (millis() - millisElapsed > WiFiTimeout) break;
   }
 
+
   if (WiFi.status() == WL_CONNECTED) {
+    tft.print("  ");
     configTime(0, 0, NTP_SERVER); // gmtOffset, daylightOffset, ntpServer  -  See https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv for Timezone codes for your region
-    //    setenv("TZ", TZ_INFO, 1);
+    //    setenv("TZ", TZ_INFO, 1);  // not good
     yield();
     delay(50);
-    tft.print("  ");
-    server.begin();
-    delay(5);
   } else {
     tft.print("W "); // WiFi Failed
     WiFi.disconnect(true);
@@ -524,6 +525,9 @@ void setup() //==================================== SETUP ======================
     tft.print("  ");
     rtcLostPower = false;
   }
+
+  server.begin();
+  delay(5);
 
   if (SDpresent) {
     tft.print("  ");
@@ -575,7 +579,6 @@ void setup() //==================================== SETUP ======================
     tft.print("  ");
     scd30.setMeasurementInterval(5);
     scd30.setAutoSelfCalibration(true);
-    scd30.beginMeasuring();
     activeSCD = true;
   } else {
     tft.print("S3");
@@ -703,23 +706,25 @@ void setup() //==================================== SETUP ======================
       //    u8g2.sendBuffer();
     }
   */
-  //  tft.print(Revision);
-  u8g2.drawStr(0, 0, "...Welcome!");
+  u8g2.drawStr(0, 0, "Ready!");
   u8g2.sendBuffer();
   u8g2.setFontDirection(0);
 
-  delay(600);
-  lastWake = millis();
+  delay(50);
+
+  Volts     = ina260.readBusVoltage(); // get first battery estimate
+  Amps      = ina260.readCurrent();
+  voltsAvg  = Volts;
+  ampsAvg   = Amps;
+  SOC       = constrain(map(Volts, 6400, 8380, 0, 100), 0, 100);
+  capacityLeft = constrain(map(voltsAvg, 6400, 8380, 0, BatteryCapacity), 0, BatteryCapacity);
+
+  scd30.beginMeasuring();
 
   tft.fillScreen(TFT_BLACK);
-  //  tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
-  //  tft.setCursor(96, 225);
-  //  tft.print(counter);
-
+  lastWake = millis();
   tone(beepPin, 2400, 3);
 
-  //  Serial.begin(115200);
-  //    delay(100);
   //  SPIFFS.format();
 
 }

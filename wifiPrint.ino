@@ -112,6 +112,7 @@ bool wifiPrint() {
             if (header.indexOf("GET /RST") >= 0) {
               htmlRestart = true;
               putPersistentBool("htmlRestart", htmlRestart);
+              putPersistentBool("loggingActive", loggingActive);
               ESP.restart();
             }
             if (header.indexOf("GET /LOG/del") >= 0) {

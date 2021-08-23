@@ -2,7 +2,7 @@
 
 void readSystemPower() {
 
-  //  if (activeSOC) {
+  //  if (activeSOC) {  // fuel gauge, no I2C data
   //  soc.quickStart();
   //  soc.setThreshold(15);
   //  socAlert = soc.getAlert();
@@ -24,7 +24,7 @@ void readSystemPower() {
         ina260.setMode(INA260_MODE_TRIGGERED);
       }
 
-      if (batIDX >= 120) {
+      if (batIDX >= 100) {    // Battery Data Smoothing
         ampsAvg   = batT / batIDX;
         voltsAvg  = volT / batIDX;
         batT      = 0;
@@ -38,11 +38,11 @@ void readSystemPower() {
 
       SOC           = constrain(map(voltsAvg, 6400, 8380, 0, 100), 0, 100);
       capacityLeft  = constrain(map(voltsAvg, 6400, 8380, 0, BatteryCapacity), 0, BatteryCapacity);
-      batDayLeft    = (capacityLeft / ampsAvg) / 24;
+      batDayLeft    = (capacityLeft / ampsAvg) / 24.00;
       b1 = batDayLeft;
-      batHourLeft   = (batDayLeft - b1) * 24;
-      b2 = batHourLeft;
-      batMinuteLeft = (batHourLeft - b2) * 60;
+      batHourLeft   = (batDayLeft - b1) * 24.0;
+      //      b2 = batHourLeft;      // doesn't work
+      //      batMinuteLeft = (batHourLeft - b2) * 60;
 
       BatteryTime   = String(int(batDayLeft)) + "d" + String(int(batHourLeft)) + "h"; // + String(batMinuteLeft) + "m";
 
@@ -72,7 +72,7 @@ void readEnvironmentData() {
     if (everyXsecFlag) {
       tempAMG = amg.readThermistor();
       myCCS811.setEnvironmentalData(humidSCD, tempSCD); //  humidHDC, tempBME
-      doDewPoint(tempSCD, humidSCD);
+      dewPoint = doDewPoint(tempSCD, humidSCD);
 
       //    scd30.beginMeasuring();  // burst reading
       //    scd30.stopMeasurement();  // burst reading
