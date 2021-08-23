@@ -279,7 +279,7 @@ void page0() {
     case 9: page9();
   }
 }
-}
+
 
 void page1() {   // Settings / Diagnostics
 
@@ -1085,7 +1085,7 @@ void page5() {
 
     tft.fillScreen(TFT_BLACK);
     //    drawBmp(SPIFFS, "/HEX240.bmp", 0, 0);   // 24bit
-    tft.pushImage(0, 0, TFT_WIDTH, TFT_HEIGHT, HEX240R_8bit);
+    tft.pushImage(0, 0, TFT_WIDTH, TFT_HEIGHT, HexWabe240);  // HEX240R_8bit
 
     /*
         tft.setTextSize(1);

@@ -21,7 +21,7 @@ void everyXsec() {
 
     if (flag) putPersistentBool("loggingActive", loggingActive); flag = false;
 
-    if (deepSleepActive && !!screenState) {
+    if (deepSleepActive && !screenState) {
       gotoDeepSleep();
     }
 
