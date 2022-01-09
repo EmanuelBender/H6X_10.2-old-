@@ -6,28 +6,10 @@
   
 //// follow the Progress Here: https://hackaday.io/project/177083-h6x-pod ////
 
-Components:
-<li>ESP32</li>
-<li>1.54" 240x240 TFT Screen</li>
-<li>0.91" 128x32 OLED Screen</li>
-<li>SCD30</li>
-<li>CCS811</li>
-<li>PA1010D</li>
-<li>BME280</li>
-<li>HDC1080</li>
-<li>VEML6075</li>
-<li>AMG8833</li>
-<li>MAX30105</li>
-<li>MPU9250</li>
-<li>DS18B20</li>
-<li>INA260</li>
-<li>DS3231</li>
-<li>microSD Card Reader</li>
-<br>
 <br>
 <p><b>The Story:</b><br/>
 
-i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from North to South and back. 
+i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from Goa to Kerala and back up to Dharamshala. 
   
 Around March 2020 I was spending my time with new friends in Rishikesh, one of whom slowly got really sick, right when COVID really started in India.
 We questioned bringing her to the Hospital but couldnt really tell, no doctors to find and the medicine shops gave us wrong or fake antibiotics, which didn't help.
@@ -56,5 +38,5 @@ https://hackaday.io/project/177083-h6x-pod <br/>
 https://www.dropbox.com/sh/55ojpmb22klrcrt/AAD_1oTMBvdd2am53Xtve0X7a?dl=0 <br/>
 ______________________________________________________________________________
 <p>
-<b>if you are intersted in knowing more or joining me, write a comment or drop me a message.</b>
+<b>if you are interested in knowing more or joining me, write a comment or drop me a message.</b>
 <p> <p/>
