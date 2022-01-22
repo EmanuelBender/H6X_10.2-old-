@@ -5,10 +5,10 @@
 <p>by eBender
   
   ***
-  The folder 'png' needs to be uploaded into SPIFFS:
-  https://www.dropbox.com/sh/y5sa5zlwnrxwieb/AABRlWYoKeYzUxtkiJ8g8-vPa?dl=0
-  The Folder 'Data' needs to be placed inside the sketch folder:
-  https://www.dropbox.com/sh/bmwrnwbqetuh2u7/AAC5K0zCWdNCB6wX0uZKRcXGa?dl=0
+  The folder 'png' needs to be uploaded into SPIFFS:  <br/>
+  https://www.dropbox.com/sh/y5sa5zlwnrxwieb/AABRlWYoKeYzUxtkiJ8g8-vPa?dl=0  <br/>
+  The Folder 'Data' needs to be placed inside the sketch folder:  <br/>
+  https://www.dropbox.com/sh/bmwrnwbqetuh2u7/AAC5K0zCWdNCB6wX0uZKRcXGa?dl=0  <br/>
   ***
   
   
