@@ -13,7 +13,6 @@ void everyXsec() {
     previousMs = millis();
     everyXsecFlag = true;
 
-    readUV();  // VEML6075 Combined UV-A, UV-B Readings
     Time(timeinfo); // update Time
 
     WiFiRSSI = WiFi.RSSI();
@@ -33,8 +32,10 @@ void everyXsec() {
 
     if (SOC < 15 || lowPowerMode) {
       bklTimeout =   6;       // TFT Backlight Off timer in Sec
+      everyXms   =   2000;
     } else {
       bklTimeout =   30;       // TFT Backlight Off timer in Sec
+      everyXms   =   1000;
     }
 
     DTdevicecount = sensors.getDeviceCount();
@@ -57,18 +58,18 @@ void everyXsec() {
     sensors.requestTemperatures();
 
     if (fanActive) {
-      mySensVals[0] = t1;
-      mySensVals[1] = t2;
-      mySensVals[2] = t3;
-      mySensVals[3] = t4;
-      mySensVals[4] = t5;
-      mySensVals[5] = t6;
-      mySensVals[6] = t7;
-      mySensVals[7] = t8;
+      DTdata[0] = t1;
+      DTdata[1] = t2;
+      DTdata[2] = t3;
+      DTdata[3] = t4;
+      DTdata[4] = t5;
+      DTdata[5] = t6;
+      DTdata[6] = t7;
+      DTdata[7] = t8;
 
-      max_probe_temp = mySensVals[7];
+      max_probe_temp = DTdata[7];
       for (idx = 1; idx < 7; idx++) {
-        if (mySensVals[idx] > max_probe_temp); max_probe_temp = mySensVals[idx]; // find biggest value
+        if (DTdata[idx] > max_probe_temp); max_probe_temp = DTdata[idx]; // find biggest value
       }
       switch ( idx ) {
         case 1: max_probe_idx = "Ambient LED"; break;
@@ -144,6 +145,7 @@ void SYSTEM() {
 
   millisElapsed = millis();
 
+  getTrackBall();
   readSystemPower();
   Warnings();          // updating Warnings & triggering Alarms
   //   readIMU();      // MPU9250 IMU Readings and Step Counter
@@ -161,6 +163,7 @@ void SYSTEM() {
 
     while (alarmEnable && powerAlarm || tempAlarm) {
       millisElapsed = millis();
+      getTrackBall();
       everyXsec();
       Warnings();
       readSystemPower();
@@ -252,6 +255,67 @@ void SYSTEM() {
       case 7: page7();
       case 8: page8();
       case 9: page9();
+    }
+  }
+}
+
+void readSystemPower() {
+
+  //  if (activeSOC) {  // fuel gauge, no I2C data
+  //  soc.quickStart();
+  //  soc.setThreshold(15);
+  //  socAlert = soc.getAlert();
+  //  socVolts = soc.getVoltage();
+  //  SOC      = soc.getSOC();
+  //  }
+
+
+  if (activeINA) {
+    if (ina260.conversionReady()) {
+
+      Amps     = ina260.readCurrent();    // in mAh
+      Volts    = ina260.readBusVoltage(); // in mV
+      Watts    = ina260.readPower();      // in mW
+
+      if (powerAlarm) {
+        ina260.setMode(INA260_MODE_CONTINUOUS);
+      } else {
+        ina260.setMode(INA260_MODE_TRIGGERED);
+      }
+
+      if (batIDX >= 100) {    // Battery Data Averaging
+        ampsAvg   = batT / batIDX;
+        voltsAvg  = volT / batIDX;
+        batT      = 0;
+        volT      = 0;
+        batIDX    = 0;
+      } else {
+        batT     += Amps;
+        volT     += Volts;
+        batIDX++;
+      }
+
+      // temporary SOC calculation and projection
+      SOC           = constrain(map(voltsAvg, 6400, 8380, 0, 100), 0, 100);
+      capacityLeft  = constrain(map(voltsAvg, 6400, 8380, 0, BatteryCapacity), 0, BatteryCapacity);
+      batDayLeft    = (capacityLeft / ampsAvg) / 24.00;
+      b1 = batDayLeft;
+      batHourLeft   = (batDayLeft - b1) * 24.0;
+      //      b2 = batHourLeft;      // doesn't work
+      //      batMinuteLeft = (batHourLeft - int(b2)) * 60;
+
+      BatteryTime   = String(int(batDayLeft)) + "d" + String(int(batHourLeft)) + "h"; // + String(batMinuteLeft) + "m";
+
+      Volts = Volts / 1000;
+      Amps  = Amps / 1000;
+
+      if (loggingActive) {
+        PowerLog  = "";
+        PowerLog += String(SOC) + ", ";
+        PowerLog += String(Volts) + ", ";
+        PowerLog += String(Amps) + ", ";
+        PowerLog += String(Watts / 1000) + ", ";
+      }
     }
   }
 }
@@ -383,7 +447,7 @@ void notification(String line1, String line2, bool notiFlag, byte alarmType, lon
   }
 }
 
-void notiWarnings() {      // Notification Organizer
+void notificationManager() {      // Notification Organizer
 
   if (fanActive && millisElapsed - notiTimestampF > 60010) { // Rising Edge
     notiTimestampF = millisElapsed;
@@ -426,75 +490,67 @@ void notiWarnings() {      // Notification Organizer
   //  notification("Battery Almost Empty", "Battery is at" + String(SOC) + "%", nBatFlag2, 2, notiTimestampB2);
 }
 
+void getTrackBall() {
 
-void smlPRNT(String val1, const char* message, int x, int x2) { // small 0,94" OLED screen print data funtions
-  u8g2.clearBuffer();     // clear the internal memory
-  val1.toCharArray(charArr, 9);
+  LeftIn      =  extIO.getPin(0, A);
+  RightIn     =  extIO.getPin(1, A);
+  UpIn        =  extIO.getPin(2, A);
+  DownIn      =  extIO.getPin(3, A);
 
-  u8g2.setFont(u8g2_font_logisoso20_tf);
-  u8g2.drawStr((u8g2.getStrWidth(charArr) / 2) + 32 + x, 24, charArr);
-
-  u8g2.setFont(u8g2_font_chroma48medium8_8r); // choose a suitable font
-  u8g2.drawStr((u8g2.getStrWidth(message) / 2) + 32 + x2, 32, message);
-
-  u8g2.sendBuffer();     // transfer internal memory to the display
-}
-
-void smlPRNT2(String val1, String val2, int x, int x2) { // small 0,94" OLED screen print data funtions
-  u8g2.clearBuffer();     // clear the internal memory
-  val1.toCharArray(charArr, 9);
-
-  u8g2.setFont(u8g2_font_logisoso18_tn);
-  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x, 20, charArr);
-
-  val2.toCharArray(charArr, 9);
-  u8g2.setFont(u8g2_font_helvR10_tn);
-  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x2, 32, charArr);
-
-  u8g2.sendBuffer();     // transfer internal memory to the display
-}
-
-void smlCHRG() {    // have never tested this
-  u8g2.clearBuffer();     // clear the internal memory
-  u8g2.setFont(u8g2_font_battery19_tn); // 8 x 19
-
-  if (count == 1) {
-    u8g2.drawStr(37, 6, "0"); count++;
-  } else if (count == 2) {
-    u8g2.drawStr(37, 6, "1"); count++;
-  } else if (count == 3) {
-    u8g2.drawStr(37, 6, "2"); count++;
-  } else if (count == 4) {
-    u8g2.drawStr(37, 6, "3"); count++;
-  } else if (count == 5) {
-    u8g2.drawStr(37, 6, "4"); count++;
-  } else if (count >= 6) {
-    u8g2.drawStr(37, 6, "5");
-    switch (SOC) {
-      case 0 ... 20:   count = 1; break;
-      case 21 ... 40:  count = 2; break;
-      case 41 ... 60:  count = 3; break;
-      case 61 ... 80:  count = 4; break;
-      case 81 ... 100: count = 5; break;
+  if (LeftIn != LeftTemp)
+  {
+    LeftTemp = LeftIn;
+    LeftT++;
+    if (LeftT > trckBallSens) {
+      Left   = true;
+      LeftT  = 0;
+#ifdef SERIAL_DEBUG
+      Serial.println("Left");
+#endif
     }
   }
-  u8g2.sendBuffer();
+  if (RightIn != RightTemp)
+  {
+    RightTemp = RightIn;
+    RightT++;
+    if (RightT > trckBallSens) {
+      Right   = true;
+      RightT  = 0;
+#ifdef SERIAL_DEBUG
+      Serial.println("Right");
+#endif
+    }
+  }
+  if (UpIn != UpTemp)
+  {
+    UpTemp = UpIn;
+    UpT++;
+    if (UpT > trckBallSens) {
+      Up   = true;
+      UpT  = 0;
+#ifdef SERIAL_DEBUG
+      Serial.println("Up");
+#endif
+    }
+  }
+  if (DownIn != DownTemp)
+  {
+    DownTemp = DownIn;
+    DownT++;
+    if (DownT > trckBallSens) {
+      Down   = true;
+      DownT  = 0;
+#ifdef SERIAL_DEBUG
+      Serial.println("Down");
+#endif
+    }
+  }
 }
 
-void smlICON(const char *message) {
-  u8g2.clearBuffer();     // clear the internal memory
-
-  u8g2.setFont(u8g2_font_open_iconic_embedded_4x_t);
-  u8g2.drawStr(u8g2.getUTF8Width(message) / 2 + 32, 0, message);
-
-  u8g2.sendBuffer();
-}
-
-
-void gotoDeepSleep() {  // send Device to Sleep
+void gotoDeepSleep() {      // send Device to deep Sleep
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
-  putPersistentBool("loggingActive", loggingActive);
+  putPersistentBool("loggingActive", loggingActive);   // remember Logging Status
   powerOffPeripherals();
 
   //  rtc_gpio_init(GPIO_NUM_17); //initialize the RTC GPIO port
@@ -520,7 +576,7 @@ void gotoDeepSleep() {  // send Device to Sleep
   esp_deep_sleep_start();
 }
 
-void powerOffPeripherals() {  // turning everything off or into low power mode
+void powerOffPeripherals() {  // turning all peripherals off or into low power mode
 
   ledcWrite(1, 0);
   TFToff();
@@ -619,7 +675,7 @@ void printStatusBar() {
     tft.drawString(RTCprint, 120, 1, 2);
   }
 
-  if (pageCount == 3) { // print minElapsed & Lamp Icon
+  if (pageCount == 3) {     // print minElapsed & Lamp Icon
     tft.setTextColor(TFT_CYAN, TFT_BLACK);
     tft.setTextPadding(30);
     tft.setTextSize(1);
@@ -733,3 +789,24 @@ void printStatusBar() {
     }
   }
 }
+
+/*
+  byte fanSpeed() {
+
+  const byte maxMeasurements = 8;
+  int myMeasurements[maxMeasurements] = {t1, t2, t3, t4, t5, t6, t7, t8};
+
+  byte maxIndex = 0;
+  int maxValue = myMeasurements[maxIndex];
+
+  for (byte i = 1; i < maxMeasurements; i++)
+  {
+    if (myMeasurements[i] > maxValue) {
+      maxValue = myMeasurements[i];
+      maxIndex = i;
+    }
+  }
+  fanPWM = constrain(map(maxValue, 40, 80, 0, 255), 0 , 255); // mapping highest sensor temp from 40-80C to 0-255 for fan speed
+
+  return fanPWM;
+  } */

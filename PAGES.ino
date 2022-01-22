@@ -1,8 +1,21 @@
 #include <pgmspace.h>
 
-void page0() {
+/*
+  page0   Menu
+  page1   System Diagnostics
+  page2   SD card
+  page3   Device Stats
+  page4   Graphs
+  page5   Home Page
+  page6   Info Page CO2
+  page7   Info Page TVOC
+  page8   Thermal Cam
+  page9   HeartRate Sensor
+*/
 
-  if (pageCount == 0) {      // MENU
+void page0() {     // MENU
+
+  if (pageCount == 0) { 
     tft.fillScreen(TFT_BLACK);
     tft.setTextDatum(TC_DATUM);
     drawBmp(SPIFFS, "/Moon240.bmp", 0, 190);
@@ -10,7 +23,7 @@ void page0() {
     tft.setTextSize(1);
     tft.setTextColor(TFT_BLACK);
     tft.setTextDatum(BL_DATUM);
-    tft.drawString("a" + String(Revision), 202, 240, 2);
+    tft.drawString(String(Revision), 202, 240, 2);
 
     byte earthPositionX = map(hr, 0, 24, 0, 230);
     byte earthPositionY = map(hr, 0, 24, 160, 170);
@@ -25,7 +38,7 @@ void page0() {
       if (!notiOn) everyXsec();
       checkScreenState();
       if (everyXsecFlag && !notiOn) printStatusBar();
-      notiWarnings();
+      notificationManager();
       wifiPrint();
       readEnvironmentData();   // CCS811 Function
       SYSTEM();
@@ -281,7 +294,7 @@ void page0() {
 }
 
 
-void page1() {   // Settings / Diagnostics
+void page1() {   // System Diagnostics
 
   if (pageCount == 1) {
 
@@ -290,13 +303,13 @@ void page1() {   // Settings / Diagnostics
     tft.setTextPadding(0);
     tft.fillRoundRect(-12, 171 - scrollTFT, 188, 32, 15, TFT_DARKGREY); // wifi box
     tft.fillRoundRect(-12, 181 - scrollTFT, 188, 32, 15, TFT_BLACK); // wifi box
-    tft.drawFastHLine(0, 51 - scrollTFT, 240, TFT_MIDDLEGREY);
-    tft.drawFastHLine(0, 93 - scrollTFT, 240, TFT_MIDDLEGREY);
+    tft.drawFastHLine(0,   51 - scrollTFT,  240, TFT_MIDDLEGREY);
+    tft.drawFastHLine(0,   93 - scrollTFT,  240, TFT_MIDDLEGREY);
     //        tft.drawFastHLine(0, 105 - scrollTFT, 240, TFT_MIDDLEGREY);
-    tft.drawFastHLine(0, 132 - scrollTFT, 240, TFT_DARKGREY);
-    tft.drawFastVLine(175, 94 - scrollTFT, 250, TFT_DARKGREY);
-    tft.drawFastVLine(122, 94 - scrollTFT, 75, TFT_DARKGREY);
-    tft.drawFastVLine(55, 94 - scrollTFT, 75, TFT_DARKGREY);
+    tft.drawFastHLine(0,   132 - scrollTFT, 240, TFT_DARKGREY);
+    tft.drawFastVLine(175, 94 - scrollTFT,  250, TFT_DARKGREY);
+    tft.drawFastVLine(122, 94 - scrollTFT,  75,  TFT_DARKGREY);
+    tft.drawFastVLine(55,  94 - scrollTFT,  75,  TFT_DARKGREY);
 
     scrollTFT = 0;
     chipId = 0;
@@ -545,14 +558,13 @@ void page1() {   // Settings / Diagnostics
         tft.print("CPU1: "); tft.setTextColor(TFT_WHITE, TFT_BLACK); verbose_print_reset_reason(rtc_get_reset_reason(1)); tft.println();
       }
 
-      notiWarnings();
+      notificationManager();
       wifiPrint();
       readEnvironmentData();   // CCS811 Function
 
       if ( millisElapsed - previousTime1 > 9000 ) {     // WiFi Network Scanner every 9 sec
 
         previousTime1 = millisElapsed;
-        yield();
         wifiNetworks = WiFi.scanNetworks();
 
         tft.setTextSize(1);
@@ -683,7 +695,7 @@ void page2() {                     // SD Directories
 
       tft.setTextColor(TFT_WHITE);
 
-      notiWarnings();
+      notificationManager();
       wifiPrint();
       checkScreenState();
       readEnvironmentData();   // CCS811 Function
@@ -791,7 +803,7 @@ void page3() {         // System
     tft.setTextSize(1);
     tft.setTextColor(TFT_CYAN);
     tft.setTextDatum(BL_DATUM);
-    tft.drawString("a" + String(Revision), 202, 240, 2);
+    tft.drawString(String(Revision), 202, 240, 2);
 
     while (pageCount == 3) {
       SYSTEM();
@@ -902,7 +914,7 @@ void page3() {         // System
       }
       wifiPrint();
       checkScreenState();
-      notiWarnings();
+      notificationManager();
       readEnvironmentData();   // CCS811 Function
       if (screenState && everyXsecFlag) printStatusBar();
       smlPRNT2(String(Volts) + "v", String(Amps) + "a", -16, 0);
@@ -935,8 +947,8 @@ void page4() {  // Graph Page    --     Sensors go into High Speed mode todo: sa
     staticGraphGFX();
     cycleCount = 0;
 
-    prevCO2 = box1Bottom - 2; // graphlines startpoints
-    prevTVOC = box1Bottom - 2;
+    prevCO2   = box1Bottom - 2; // graphlines startpoints
+    prevTVOC  = box1Bottom - 2;
     lastpowMW = box2Bottom - 10;
 
     //    scd30.setMeasurementInterval(2);
@@ -1057,7 +1069,7 @@ void page4() {  // Graph Page    --     Sensors go into High Speed mode todo: sa
         tft.print("OF");
       }
 
-      notiWarnings();
+      notificationManager();
       wifiPrint();
       readEnvironmentData();   // CCS811 Function
 
@@ -1087,11 +1099,13 @@ void page5() {
     //    drawBmp(SPIFFS, "/HEX240.bmp", 0, 0);   // 24bit
     tft.pushImage(0, 0, TFT_WIDTH, TFT_HEIGHT, HEX240R_8bit);  // HEX240R_8bit
 
+    //    readLogFile(SD, LogFile);
+
     /*
         tft.setTextSize(1);
         tft.setTextColor(TFT_CYAN);
         tft.setTextDatum(BL_DATUM);
-        tft.drawString("v" + String(Revision), 210, 240, 2);
+        tft.drawString(String(Revision), 210, 240, 2);
         tft.setTextColor(TFT_BLACK);
         tft.setTextDatum(BC_DATUM);
         tft.drawNumber(counter, 120, 225, 2);
@@ -1300,7 +1314,7 @@ void page5() {
         //        }
       }
       //      checkScreenState();
-      notiWarnings();
+      notificationManager();
       wifiPrint();
       readEnvironmentData();   // CCS811 Function
     }
@@ -1362,7 +1376,7 @@ void page6() { // Info CO2
         if (co2SCD > 5000) tft.setTextColor(TFT_RED, TFT_BLACK);
         if (!notiOn) tft.drawString("CO2  " + String(co2SCD) + "ppm", 10, 15, 4);
       }
-      notiWarnings();
+      notificationManager();
       wifiPrint();
       checkScreenState();
       readEnvironmentData();   // CCS811 Function
@@ -1434,7 +1448,7 @@ void page7() {   // Info tVOC
         if (tvocCCS > 1500) tft.setTextColor(TFT_RED, TFT_BLACK);
         if (!notiOn) tft.drawString("tVOC  " + String(tvocSMPL) + "ppb", 10, 15, 4);
       }
-      notiWarnings();
+      notificationManager();
       wifiPrint();
       checkScreenState();
       readEnvironmentData();   // CCS811 Function
@@ -1691,7 +1705,7 @@ void page8() {     // Thermal Cam
       while (pageCount == 8) {
         SYSTEM();
         everyXsec();
-        notiWarnings();
+        notificationManager();
         wifiPrint();
         checkScreenState();
         readEnvironmentData();
@@ -1846,7 +1860,7 @@ void page9() {     // MAX30105 HRO2 particle
       while (pageCount == 9) {
         SYSTEM();
         everyXsec();
-        notiWarnings();
+        notificationManager();
         wifiPrint();
         checkScreenState();
         readEnvironmentData();   // CCS811 Function

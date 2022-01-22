@@ -63,6 +63,7 @@ bool wifiPrint() {
             if (header.indexOf("GET /Powersave/off") >= 0) {      // Power Saving Mode
               deepSleepActive = true;
               lowPowerMode = true;
+              everyXms = 2000;
               setCpuFrequencyMhz(80);
               myCCS811.setDriveMode(3);   // 0=idle, 1=1sec, 2=10sec, 3=60sec, 4=RAW
               scd30.setMeasurementInterval(60);
@@ -80,6 +81,7 @@ bool wifiPrint() {
                 ina260.setAveragingCount(INA260_COUNT_128); // 128 * 558us = 71ms
                 ina260.setVoltageConversionTime(INA260_TIME_558_us); // 140_us, 204_us, 332_us, 558_us, 1_1_ms,
                 ina260.setCurrentConversionTime(INA260_TIME_558_us);
+                everyXms = 1000;
               }
               TFTon();
             }

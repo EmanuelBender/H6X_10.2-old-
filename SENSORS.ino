@@ -1,72 +1,15 @@
 #include <pgmspace.h>
 
-void readSystemPower() {
-
-  //  if (activeSOC) {  // fuel gauge, no I2C data
-  //  soc.quickStart();
-  //  soc.setThreshold(15);
-  //  socAlert = soc.getAlert();
-  //  socVolts = soc.getVoltage();
-  //  SOC      = soc.getSOC();
-  //  }
-
-
-  if (activeINA) {
-    if (ina260.conversionReady()) {
-
-      Amps     = ina260.readCurrent();    // in mAh
-      Volts    = ina260.readBusVoltage(); // in mV
-      Watts    = ina260.readPower();      // in mW
-
-      if (powerAlarm) {
-        ina260.setMode(INA260_MODE_CONTINUOUS);
-      } else {
-        ina260.setMode(INA260_MODE_TRIGGERED);
-      }
-
-      if (batIDX >= 100) {    // Battery Data Smoothing
-        ampsAvg   = batT / batIDX;
-        voltsAvg  = volT / batIDX;
-        batT      = 0;
-        volT      = 0;
-        batIDX    = 0;
-      } else {
-        batT     += Amps;
-        volT     += Volts;
-        batIDX++;
-      }
-
-      SOC           = constrain(map(voltsAvg, 6400, 8380, 0, 100), 0, 100);
-      capacityLeft  = constrain(map(voltsAvg, 6400, 8380, 0, BatteryCapacity), 0, BatteryCapacity);
-      batDayLeft    = (capacityLeft / ampsAvg) / 24.00;
-      b1 = batDayLeft;
-      batHourLeft   = (batDayLeft - b1) * 24.0;
-      //      b2 = batHourLeft;      // doesn't work
-      //      batMinuteLeft = (batHourLeft - b2) * 60;
-
-      BatteryTime   = String(int(batDayLeft)) + "d" + String(int(batHourLeft)) + "h"; // + String(batMinuteLeft) + "m";
-
-      Volts = Volts / 1000;
-      Amps  = Amps / 1000;
-
-      if (loggingActive) {
-        PowerLog  = "";
-        PowerLog += String(SOC) + ", ";
-        PowerLog += String(Volts) + ", ";
-        PowerLog += String(Amps) + ", ";
-        PowerLog += String(Watts / 1000) + ", ";
-      }
-    }
-  }
-}
-
 void readEnvironmentData() {
+
+  if (everyXsecFlag && activeRTC) tempRTC = rtc.getTemperature();
 
   if (activeSCD) {
     if (scd30.dataAvailable()) {
       co2SCD   = scd30.getCO2();
       tempSCD  = scd30.getTemperature();
       humidSCD = scd30.getHumidity();
+      if (co2SCD == 40000) co2SCD = 0;
     }
 
     if (everyXsecFlag) {
@@ -149,70 +92,35 @@ void readEnvironmentData() {
 
       if (loggingActive) {
         envData  = "";
-        envData += String(co2SCD) + ", ";
-        envData += String(co2SMPL) + ", ";
-        envData += String(tvocSMPL) + ", ";
+        if (activeSCD) {
+          envData += String(co2SCD) + ", ";
+        } else {
+          envData += "--, ";
+        }
         envData += String(tempSCD) + ", ";
         envData += String(humidSCD) + ", ";
-        envData += String(altBME) + ", ";
-        envData += String(pressureBME) + ", ";
+        if (activeCCS) {
+          envData += String(co2SMPL) + ", ";
+          envData += String(tvocSMPL) + ", ";
+        } else {
+          envData += "--, --, ";
+        }
+        if (activeBME) {
+          envData += String(altBME) + ", ";
+          envData += String(pressureBME) + ", ";
+        } else {
+          envData += "--, --, ";
+        }
       }
     }
   }
 }
 
-String printSensorError() {
-
-  CCS811Core::status returnCode = myCCS811.begin();
-
-  switch (returnCode) {
-    case CCS811Core::SENSOR_ID_ERROR:
-      {
-        return "ID / LowC";
-        break;
-      }
-    case CCS811Core::SENSOR_I2C_ERROR:
-      {
-        return "I2C / LowC";
-        break;
-      }
-    case CCS811Core::SENSOR_INTERNAL_ERROR:
-      {
-        uint8_t error = myCCS811.getErrorRegister();
-        if (error == 0xFF) { //comm error
-          return "ITRNL_COMM";
-        } else {
-          if (error & 1 << 5)
-            return "HeaterSupply";
-          if (error & 1 << 4)
-            return "HeaterFault";
-          if (error & 1 << 3)
-            return "MaxResistance";
-          if (error & 1 << 2)
-            return "ModeInvalid";
-          if (error & 1 << 1)
-            return "RegInvalid";
-          if (error & 1 << 0)
-            return "MsgInvalid";
-        }
-        break;
-      }
-    case CCS811Core::SENSOR_GENERIC_ERROR:
-      {
-        return "ValueMax";
-        break;
-      }
-    default:
-      return "ok";
-      break;
-  }
-}
-
-void readUV() {
+void readUV() {           // is being read every X seconds
 
   //    VML.powerOn();
   //    VML.shutdown();
-  if (activeVML) {
+  if (activeVML && everyXsecFlag) {
     UVI = VML.index();
     //  UVA = VML.uva();
     //  UVB = VML.uvb();
@@ -222,6 +130,26 @@ void readUV() {
   } else if (loggingActive) {
     UVIsd = "--, ";
   }
+}
+
+void printTemperature(DeviceAddress deviceAddress) {     // Dallas Temperature Sensor
+
+  tempC = sensors.getTempC(deviceAddress);
+
+  if (tempC == DEVICE_DISCONNECTED_C) {
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.print("--");
+    tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    return;
+  }
+
+  if (sensors.hasAlarm(deviceAddress)) {
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+  } else {
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  }
+  tft.print(tempC, 0);
+  // tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
 }
 
 void amg8833() { // Thermal Cam AMG8833
@@ -261,6 +189,53 @@ void amg8833() { // Thermal Cam AMG8833
 }
 
 
+
+String printSensorError() {
+
+  CCS811Core::status returnCode = myCCS811.begin();
+
+  switch (returnCode) {
+    case CCS811Core::SENSOR_ID_ERROR:
+      {
+        return "ID/LowC";
+        break;
+      }
+    case CCS811Core::SENSOR_I2C_ERROR:
+      {
+        return "I2C/LowC";
+        break;
+      }
+    case CCS811Core::SENSOR_INTERNAL_ERROR:
+      {
+        uint8_t error = myCCS811.getErrorRegister();
+        if (error == 0xFF) { //comm error
+          return "ITRNL_COMM";
+        } else {
+          if (error & 1 << 5)
+            return "HeaterSupply";
+          if (error & 1 << 4)
+            return "HeaterFault";
+          if (error & 1 << 3)
+            return "MaxResistance";
+          if (error & 1 << 2)
+            return "ModeInvalid";
+          if (error & 1 << 1)
+            return "RegInvalid";
+          if (error & 1 << 0)
+            return "MsgInvalid";
+        }
+        break;
+      }
+    case CCS811Core::SENSOR_GENERIC_ERROR:
+      {
+        return "ValueMax";
+        break;
+      }
+    default:
+      return "ok";
+      break;
+  }
+}
 
 /*
   void readIMU() {

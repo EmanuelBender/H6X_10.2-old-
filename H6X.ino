@@ -20,15 +20,20 @@
   AMG8833    - 0x69 - Adafruit Industries
   SCD30      - 0x61 - Nathan Seidle @ Sparkfun Electronics
   INA260     - 0x41 - Adafruit Industries
-  DS3231     - 0x68 - Adafruit Industries - fork of JeeLabs RTC Library
+  DS3231     - 0x68 - Adafruit Industries - fork JeeLabs RTC Library
   (not installed) MPU9250    - 0x69 - (I2C Bus 2) - asukiaaa Asuki Kono, kevinlhoste, josephlarralde joseph
 
+  Additional tools:
+  - Henning Karlsen http://www.rinkydinkelectronics.com/index.php (565 Image Converter)
+
   Bugs/Issues:
-    VEML6075 broken?
-    electronic paths too weak? (breadboard)
+    I2C paths too weak? (breadboard)
+    I2C booster test
   ========================================================================================*/
 
-#define Revision "10.1" // Alpha Stage
+#define Revision "a10.2" // Alpha Stage
+
+#define SERIAL_DEBUG
 
 #include <Arduino.h>
 #include <Credentials.h>
@@ -53,19 +58,20 @@
 // #include "TProbesB240.h"
 // #include "hex.h"       //tft.pushImage(0, 0, 240, 240, Hex_Blur_240x240); // put where image should be loaded
 
-#include <MAX30105.h>             // Sensor Libraries
+#include <MAX30105.h>               // Sensor Libraries
 #include "heartRate.h"
 #include <Adafruit_INA260.h>
 // #include <SparkFun_MAX1704x_Fuel_Gauge_Arduino_Library.h>
 #include <Adafruit_AMG88xx.h>
 #include "SparkFun_SCD30_Arduino_Library.h"
 #include <DallasTemperature.h>
-#include <OneWire.h>        // Temp Probes
+#include <OneWire.h>            // Temp Probes
 // #include <MPU9250_asukiaaa.h>
 #include <SparkFun_VEML6075_Arduino_Library.h>
-#include <SparkFunCCS811.h> // CJMCU-8128 - CCS811 [from Banggood with all 3 sensors]
-#include <SparkFunBME280.h> // BME280
+#include <SparkFunCCS811.h>     // CJMCU-8128 - CCS811 [from Banggood with all 3 sensors]
+#include <SparkFunBME280.h>     // BME280
 #include <ClosedCube_HDC1080.h> // HDC1080
+#include <MCP23017.h>
 
 #include <EasyButton.h>
 
@@ -97,7 +103,7 @@ const byte boxHeight  = 100;
 const byte boxWidth   = 230;
 const byte l          = 228; // boxWidth - 2
 
-const byte menuPages  = 9;
+const byte menuPages  = 9;   // 9 UI Pages
 byte       pageCount  = 0;
 byte       menuCar    = 3;
 uint8_t    mX         = 95, mY;
@@ -108,14 +114,14 @@ const char *icon2     = "/car/systemR.bmp";
 const char *icon3     = "/car/homecubeR.bmp";
 const char *icon4     = "/car/tempcamR.bmp";
 const char *icon5     = "/car/heartrateR.bmp";
-const byte  carX1     = 10;                      // Menu Icons X
+const byte  carX1     = 10;                      // Menu Icons position X
 const byte  carX2     = 55;
 const byte  carX3     = 100;
 const byte  carX4     = 145;
 const byte  carX5     = 190;
 
-OneWire oneWire(5); // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-DallasTemperature sensors(&oneWire); // Pass our oneWire reference to Dallas Temperature.
+OneWire       oneWire(5);                  // oneWire Instance Setup
+DallasTemperature sensors(&oneWire); // Pass oneWire reference to Dallas Temperature.
 DeviceAddress tempProbe1 = {0x28, 0x12, 0xEF, 0x75, 0xD0, 0x01, 0x3C, 0x77};
 DeviceAddress tempProbe2 = {0x28, 0x56, 0xC6, 0x75, 0xD0, 0x01, 0x3C, 0xD5};
 DeviceAddress tempProbe3 = {0x28, 0xB9, 0xAA, 0x75, 0xD0, 0x01, 0x3C, 0xE8};
@@ -124,9 +130,9 @@ DeviceAddress tempProbe5 = {0x28, 0xBD, 0x6B, 0x75, 0xD0, 0x01, 0x3C, 0xDB};
 DeviceAddress tempProbe6 = {0x28, 0xFB, 0x83, 0x75, 0xD0, 0x01, 0x3C, 0xF8};
 DeviceAddress tempProbe7 = {0x28, 0x30, 0x14, 0x75, 0xD0, 0x01, 0x3C, 0x79};
 DeviceAddress tempProbe8 = {0x28, 0x87, 0xB1, 0x75, 0xD0, 0x01, 0x3C, 0x1A};
-int  t1, t2, t3, t4, t5, t6, t7, t8, max_probe_temp;
-bool ta1, ta2, ta3, ta4, ta5, ta6, ta7, ta8;         // critical temp flag
-int        mySensVals[8];
+int        t1, t2, t3, t4, t5, t6, t7, t8, max_probe_temp;
+bool       ta1, ta2, ta3, ta4, ta5, ta6, ta7, ta8;         // critical temp flag
+int        DTdata[8];
 const byte tA1 = 27;  // AMB    temp probes soft Alarm - Fan Activation Thresholds
 const byte tA2 = 27;  // BAT1
 const byte tA3 = 27;  // ESP
@@ -138,29 +144,63 @@ const byte tA8 = 27;  // X
 String     high_temp_message, max_probe_idx;
 byte       DTdevicecount;
 
-#define tPAD1    4         // I/O PINS
-#define tPAD2    19 // 19
-#define tPAD3    2
-#define beepPin  33
-#define fan      26
+char       recall[256]; // read SDcard Data and pull for displaying Graphs#
+String     recallSCD, recallTemp1, recallRH, recallCCSt, recallCCSc, recallUV, recallSOC, recallAMP, recallTIME;
+int        idx0, idx1, idx2, idx3, idx4 /*, idx5, idx6, idx7, idx8, idx9, idx10, idx11, idx12, idx13, idx14*/;
+long int   SOC24array[24];
+double     AMP24array[24];
+long int   SCD24array[24];
+double     TMP124array[24];
+double     RH24array[24];
+long int   CCSc24array[24];
+long int   CCSt24array[24];
+
+#define  tPAD1    4         // I/O PINS
+#define  tPAD2    19        // 19
+#define  tPAD3    2
+#define  beepPin  33
+#define  fan      26
 //#define powerOFF 25
-#define pwmLED   17  // PWM controlled LED output
-#define tftPIN   27   // TFT backlight
-byte    tftBKL = 0;  // TFT brightness
-byte    tftBKLmax = 255;
+#define  pwmLED   17  // PWM controlled LED output
+#define  tftPIN   27   // TFT backlight
+byte     tftBKL = 0;  // TFT brightness
+byte     tftBKLmax = 255;
 
-#define pwmfreq 20000
-#define pwmresolution 12
-byte ledB    = 0;
-byte ledBmax = 255;
-bool ledBon;
+#define  pwmfreq 20000
+#define  pwmresolution 12
+byte     ledB    = 0;
+byte     ledBmax = 255;
+bool     ledBon;
 
-#define SDA1 21
-#define SCL1 22
+#define  SDA1 21
+#define  SCL1 22
 //#define SPI_FREQUENCY 78000000      // 80Mhz max   --- VSPI, TFT
 //#define SPI_READ_FREQUENCY 75000000 // 27Mhz max   --- VSPI, TFT
 //#define I2C_SPEED_FAST 400000       // 400000 - 400Kb/s max , 3.4Mhz
 SPIClass spiSD = SPIClass(HSPI);
+
+bool         loggingActive;                 // SYSTEM
+bool         deepSleepActive = false;
+bool         alarmEnable     = true;        // enables critical Alarm Warnings. should stay on!
+bool         fanActive       = false;
+bool         silentMode      = false;
+bool         htmlRestart;
+bool         deleteLog;
+bool         notiOn;
+int          notiY = -60, notiTimer;
+int          notiTimestampF = -60000, notiTimestampA = -60000, notiTimestampT = -15000, notiTimestampL = -60000, notiTimestampW = -10000;
+bool         SDpresent, nFanFlag, nAirFlag, nTempFlag, nLedFlag, nWetFlag;
+String       SDdata;
+String       SDloghead = "";
+String       filename;
+String       panic;
+File         bmpFS;
+File         file;
+String       buffer;
+uint32_t     seekOffset;
+uint16_t     w, h, row, col;
+uint8_t      r, g, b;
+uint16_t     padding;
 
 bool        screenState     =  true;     // tft On/Off state
 long int    sleepTimer      =  0;        // tft On/Off timer
@@ -174,55 +214,34 @@ bool        everyXsecFlag;
 int         everyX;
 
 Adafruit_INA260 ina260 = Adafruit_INA260();      // INA219 current and voltage readings
-//SFE_MAX1704X soc(MAX1704X_MAX17043);
-#define BatteryCapacity 6900 // in mAh
-float   Amps, Volts, Watts;
-char    bat_char[4];
-char    charArr[14];
-int     Svolt, Bvolt, Lvolt, currA, powMW, lastpowMW;
-int     TFT_BATCOLOR;
-byte    INAmode;
-float   batDayLeft, batHourLeft;
-int     batMinuteLeft;
-int     capacityLeft;
-int     ampsAvg  = 10;
-int     voltsAvg = 6400;
-byte    batIDX;
-int     batT, volT;
-int     b1, b2;
-String  BatteryTime;
-int     SOC;
-double  socVolts;
+//SFE_MAX1704X soc(MAX1704X_MAX17043);           // fuel Gauge
+#define     BatteryCapacity 6900 // in mAh, temporary 2S1P setup - 2S6P full Pack
+float       Amps, Volts, Watts;
+char        bat_char[4];
+char        charArr[14];
+int         Svolt, Bvolt, Lvolt, currA, powMW, lastpowMW;
+int         TFT_BATCOLOR;
+byte        INAmode;
+float       batDayLeft, batHourLeft;
+int         batMinuteLeft;
+int         capacityLeft;
+int         ampsAvg  = 10;
+int         voltsAvg = 6400;
+byte        batIDX;
+int         batT, volT;
+int         b1, b2;
+String      BatteryTime;
+int         SOC;
+double      socVolts;
+byte        fanPWM;
 
-const double lowVoltAlarm   = 6;
+const double lowVoltAlarm   = 6.0;
 const double highVoltAlarm  = 8.6;
-const double ampsFanTH      = 1.5;    // current threshold for Fan activation in Amps
+const double ampsFanTH      = 1.1;    // current threshold for Fan activation in Amps
 
 bool   activeRTC, activeBME, activeCCS, activeSCD, activeMAX, activeINA, activeAMG, activeVML, activeSOC;
 bool   powerAlarm, tempAlarm, chargingActive, wetAlarm, lowPowerMode;  //  Voltage & Current Alarms
 bool   airWarning, uvWarning;
-bool   loggingActive;                 // SYSTEM
-bool   deepSleepActive = false;
-bool   alarmEnable     = true;        // enables critical Alarm Warnings. should stay on!
-bool   fanActive       = false;
-bool   silentMode      = true;
-bool   htmlRestart;
-bool   deleteLog;
-bool   notiOn;
-int    notiY = -60, notiTimer;
-int    notiTimestampF = -60000, notiTimestampA = -60000, notiTimestampT = -15000, notiTimestampL = -60000, notiTimestampW = -10000;
-bool   SDpresent, nFanFlag, nAirFlag, nTempFlag, nLedFlag, nWetFlag;
-String SDdata;
-String SDloghead = "";
-String filename;
-String panic;
-File   bmpFS;
-File   file;
-String buffer;
-uint32_t seekOffset;
-uint16_t w, h, row, col;
-uint8_t  r, g, b;
-uint16_t padding;
 
 MAX30105 MAX30105;    // HR + SpO2 Settings
 uint32_t ir, red;
@@ -259,7 +278,7 @@ double   aveir     = 0;
 double   sumirrms  = 0;
 double   sumredrms = 0;
 
-Adafruit_AMG88xx amg;         //   AMG8833
+Adafruit_AMG88xx amg;         //   AMG8833 Thermal Cam
 byte     redAMG, greenAMG, blueAMG;
 //float   aa, bb, cc, dd;
 
@@ -301,7 +320,7 @@ String     RTCd       = ""; // RTC date logging
 String     RTCprint   = ""; // HH:MM:SS stamp
 String     RTClogfile = ""; // '/dd.mm.yy.txt'
 
-String    ledBprint, currentLine, envData, PowerLog, tempProbes, dateString;
+String     currentLine, envData, PowerLog, tempProbes, dateString;
 
 long int  previousTime, previousTime1, millisElapsed, minElapsed, secElapsed, previousMs;
 long int  cycleCount;
@@ -310,7 +329,8 @@ byte      count = 0;
 uint16_t  FPS;
 const long uS_TO_S_FACTOR = 1000000;
 
-#define SDLOGHEAD "\nTime, Date, Bat %, Bat V, Amps, Watts, t1, t2, t3, t4, t5, t6, t7, t8, CO2, CO2(CCS), tVOC, Temp, RH, Alt, Press, UV, Backlight, Fan, LED, Low Power, Deep Sleep, WiFi\n"
+String  logFileFormat = ".csv";
+#define SDLOGHEAD "\nTime, Date, Bat %, Bat V, Amps, Watts, t1, t2, t3, t4, t5, t6, t7, t8, CO2(SCD), Temp, RH, CO2(CCS), tVOC, Alt, Press, UV, Backlight, Fan, LED, Low Power, Deep Sleep, WiFi\n"
 
 //  MPU9250_asukiaaa IMU;
 //  float    aX, aY, aZ, aSqrt, gX, gY, gZ, mDirection, mX, mY, mZ;
@@ -355,8 +375,16 @@ const char *TZ_INFO = "CET-1CEST,M3.5.0,M10.5.0/3"; //  CET-1CEST,M3.5.0,M10.5.0
 tm timeinfo;
 time_t now;
 
-void buttonInterrupt1();
-void buttonInterrupt2();
+MCP23017 extIO(0x20);       // Trackball  (A2/A1/A0 = LOW)
+
+byte     trckBallSens = 3;  // lower = faster
+bool     LeftIn, RightIn, UpIn, DownIn;
+bool     LeftTemp, RightTemp, UpTemp, DownTemp;
+byte     UpT, DownT, LeftT, RightT;
+bool     Up, Down, Left, Right;
+
+//void buttonInterrupt1();
+//void buttonInterrupt2();
 EasyButton button(tPAD3);
 void buttonPressed();
 void sequenceEllapsed();
@@ -365,13 +393,17 @@ void buttonISR();
 
 void setup() //==================================== SETUP =========================================
 {
-  //  Serial.begin(115200);
+#ifdef SERIAL_DEBUG
+  Serial.begin(115200);
+  delay(50);
+#endif
+
   tft.fillScreen(TFT_BLACK);
   tft.begin();
   delay(5);
 
   //  spr.setColorDepth(16);
-  createDialScale(0, 180, 1);   // create scale (start angle, end angle, increment angle)
+  createDialScale(0, 180, 1);    // create scale (start angle, end angle, increment angle)
   createNeedle();
   createDialScale2(0, 180, 1);   // create scale (start angle, end angle, increment angle)
   createNeedle2();
@@ -383,6 +415,15 @@ void setup() //==================================== SETUP ======================
   u8g2.setFontMode(0);
   u8g2.setFont(u8g2_font_u8glib_4_tf);
 
+  //  gpio_deep_sleep_hold_dis();
+  rtc_gpio_hold_dis(GPIO_NUM_17);
+  rtc_gpio_hold_dis(GPIO_NUM_26);
+  rtc_gpio_hold_dis(GPIO_NUM_27);
+
+  Wire.begin(SDA1, SCL1, 100000); // I2C_SPEED_FAST
+  //  Wire1.begin(SDA2, SCL2, I2C_SPEED_FAST);
+  delay(5);
+
   pinMode(fan, OUTPUT);
   digitalWrite(fan, LOW);
   pinMode(tftPIN, OUTPUT);
@@ -390,8 +431,8 @@ void setup() //==================================== SETUP ======================
   ledcAttachPin(pwmLED, 1); // ledPin, ledChannel
   ledcSetup(1, pwmfreq, pwmresolution); // ledChannel, Frequency, Resolution
 
-  attachInterrupt(tPAD1, buttonInterrupt1, RISING);
-  attachInterrupt(tPAD2, buttonInterrupt2, RISING);
+  //  attachInterrupt(tPAD1, buttonInterrupt1, RISING);
+  //  attachInterrupt(tPAD2, buttonInterrupt2, RISING);
   //  attachInterrupt(digitalPinToInterrupt(tPAD3), buttonInterrupt3, RISING);
 
   button.begin();
@@ -403,27 +444,29 @@ void setup() //==================================== SETUP ======================
   //  pinMode(powerOFF, OUTPUT);
   //  digitalWrite(powerOFF, HIGH);
 
-  //  gpio_deep_sleep_hold_dis();
-  rtc_gpio_hold_dis(GPIO_NUM_17);
-  rtc_gpio_hold_dis(GPIO_NUM_26);
-  rtc_gpio_hold_dis(GPIO_NUM_27);
-
-  Wire.begin(SDA1, SCL1, I2C_SPEED_FAST);
-  //  Wire1.begin(SDA2, SCL2, I2C_SPEED_FAST);
-  delay(2);
+  extIO.Init();                   // MCP23017
+  extIO.setPortMode(B11110000, A);   // Port A: pin 0-3 Input, 4-7 Output
+  extIO.setPortMode(B11110000, B);   // Port B: pin 0-3 Input, 4-7 Output
+  extIO.setPortPullUp(B11110000, A); // outputs have pullup resistors
+  extIO.setPortPullUp(B11110000, B);
+  extIO.setPin(4, A, LOW);           // White
+  extIO.setPin(5, A, LOW);           // Blue
+  extIO.setPin(6, A, LOW);           // Green
+  extIO.setPin(7, A, LOW);           // Red
 
   preferences.begin("my - app", false);
-  counter = preferences.getUInt("counter", 0);    // persistent Preferences
+  counter       = preferences.getUInt("counter", 0);    // persistent Preferences
   counter++;
   preferences.putUInt("counter", counter);
   htmlRestart   = preferences.getBool("htmlRestart", 0);
   loggingActive = preferences.getBool("loggingActive", 0);
-  steps         = preferences.getUInt("steps", 0);
+  //  steps         = preferences.getUInt("steps", 0);
   preferences.end();
 
   millisElapsed = millis();
   while (!SPIFFS.begin()) {
-    delay(10);
+    delay(5);
+    yield();
     if (millis() - millisElapsed > 2000) {
       u8g2.drawStr(120, 0, "SPIFFS FAILED");
       u8g2.sendBuffer();
@@ -431,9 +474,11 @@ void setup() //==================================== SETUP ======================
     }
   }
 
-  spiSD.begin(14, 39, 13, 15); // SCK, MISO, MOSI, CS
   spiSD.setFrequency(SPI_FREQUENCY);
-  delay(10);
+  spiSD.begin(14, 39, 13, 15); // SCK, MISO, MOSI, CS
+  yield();
+  delay(5);
+
   if (SD.begin(15, spiSD, SPI_FREQUENCY)) {
     SDpresent = true;
     //    loggingActive = true;
@@ -444,36 +489,44 @@ void setup() //==================================== SETUP ======================
     u8g2.sendBuffer();
   }
 
-  tft.setTextColor(TFT_WHITE);
+  tft.setTextColor(TFT_LIGHTGREY);
   tft.setTextDatum(MC_DATUM);
   tft.setTextSize(1);
 
   if (!SDpresent) {
     drawBmp(SPIFFS, "/BuddhaRed240.bmp", 0, 0);
-    tft.drawString("DON'T PANIC", TFT_WIDTH / 2, 198, 4);
+    tft.drawString("DON'T PANIC!", TFT_WIDTH / 2, 198, 4);
   } else {
     i = random(1, 14);
-    if (i == 1) drawBmp(SD, "/UI/nasa240.bmp", 0, 0);
-    if (i == 2) drawBmp(SD, "/UI/NASAretro.bmp", 0, 0);
-    if (i == 3) drawBmp(SD, "/UI/NasaWorm240.bmp", 0, 0);
-    if (i == 4) drawBmp(SD, "/UI/Curiosity240.bmp", 0, 0);
-    if (i == 5) drawBmp(SD, "/UI/deathstar240.bmp", 0, 0);
-    if (i == 6) drawBmp(SD, "/UI/MoonEarth240.bmp", 0, 0);
-    if (i == 7) drawBmp(SD, "/UI/Saturn240.bmp", 0, 0);
-    if (i == 8) drawBmp(SD, "/UI/Bahamas240.bmp", 0, 0);
-    if (i == 9) drawBmp(SD, "/UI/ISS240.bmp", 0, 0);
-    if (i == 10) drawBmp(SD, "/UI/River240.bmp", 0, 0);
-    if (i == 11) drawBmp(SD, "/UI/EarthNight240.bmp", 0, 0);
-    if (i == 12) drawBmp(SD, "/UI/github240.bmp", 0, 0);
-    if (i == 13) drawBmp(SD, "/UI/NASAretro.bmp", 0, 0);
+    switch (i) {
+      case 1:  drawBmp(SD, "/UI/nasa240.bmp", 0, 0);
+      case 2:   drawBmp(SD, "/UI/NASAretro.bmp", 0, 0);
+      case 3:  drawBmp(SD, "/UI/NasaWorm240.bmp", 0, 0);
+      case 4:  drawBmp(SD, "/UI/Curiosity240.bmp", 0, 0);
+      case 5:  drawBmp(SD, "/UI/deathstar240.bmp", 0, 0);
+      case 6:  drawBmp(SD, "/UI/MoonEarth240.bmp", 0, 0);
+      case 7:  drawBmp(SD, "/UI/Saturn240.bmp", 0, 0);
+      case 8:  drawBmp(SD, "/UI/Bahamas240.bmp", 0, 0);
+      case 9:  drawBmp(SD, "/UI/ISS240.bmp", 0, 0);
+      case 10: drawBmp(SD, "/UI/River240.bmp", 0, 0);
+      case 11: drawBmp(SD, "/UI/EarthNight240.bmp", 0, 0);
+      case 12: drawBmp(SD, "/UI/github240.bmp", 0, 0);
+      case 13: drawBmp(SD, "/UI/NASAretro.bmp", 0, 0);
+      case 14: drawBmp(SPIFFS, "/BuddhaRed240.bmp", 0, 0);
+    }
     //    if (i == 14) drawBmp(SD, "/UI/nasab240.bmp", 0, 0);
-    if (i == 1 || i == 2 || i == 4 || i == 5 || i == 6 || i == 12 || i == 13) {
-      tft.drawString("DON'T PANIC", TFT_WIDTH / 2, 198, 4);
+    if (i == 1 || i == 4 || i == 5 || i == 6 || i == 14) {
+      switch (random(1, 4)) {
+        case 1: tft.drawString("DON'T PANIC!", TFT_WIDTH / 2, 198, 4);
+        case 2: tft.drawString("LOADING...", TFT_WIDTH / 2, 198, 4);
+        case 3: tft.drawString("[H6X POD]", TFT_WIDTH / 2, 198, 4);
+        case 4: tft.drawString("FOCUS", TFT_WIDTH / 2, 198, 4);
+      }
     }
     i = 0;
   }
 
-  tft.setTextColor(TFT_BLACK, TFT_INDIA); // Connect WiFi
+  tft.setTextColor(TFT_BLACK, TFT_INDIA);
   tft.setTextSize(2);
   tft.setCursor(0, 225);
 
@@ -487,17 +540,17 @@ void setup() //==================================== SETUP ======================
   millisElapsed = millis();
   while (WiFi.status() != WL_CONNECTED) {
     yield();
-    delay(50);
+    delay(30);
     if (millis() - millisElapsed > WiFiTimeout) break;
   }
 
 
   if (WiFi.status() == WL_CONNECTED) {
     tft.print("  ");
-    configTime(0, 0, NTP_SERVER); // gmtOffset, daylightOffset, ntpServer  -  See https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv for Timezone codes for your region
+    configTime(0, 0, NTP_SERVER);  // gmtOffset, daylightOffset, ntpServer  -  See https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv for Timezone codes for your region
     //    setenv("TZ", TZ_INFO, 1);  // not good
     yield();
-    delay(50);
+    delay(20);
   } else {
     tft.print("W "); // WiFi Failed
     WiFi.disconnect(true);
@@ -726,6 +779,9 @@ void setup() //==================================== SETUP ======================
   tone(beepPin, 2400, 3);
 
   //  SPIFFS.format();
+#ifdef SERIAL_DEBUG
+  Serial.println("Setup Done.");
+#endif
 
 }
 

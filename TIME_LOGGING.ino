@@ -1,14 +1,13 @@
 #include <pgmspace.h>
 
-void Time(tm localTime) {
-  secElapsed = millisElapsed / 1000;   // time elapsed since boot in min
+void Time(tm localTime) {          // happens every X sec
+  secElapsed = millisElapsed / 1000; // time elapsed since boot in min
   minElapsed = secElapsed / 60;
-  time(&now);                      // RTC time
-  localtime_r(&now, &timeinfo);    // ESP32 Time format
+  time(&now);                        // RTC time
+  localtime_r(&now, &timeinfo);      // ESP32 Time format?
   DateTime now = rtc.now();
-  tempRTC = rtc.getTemperature();
 
-  yr = now.year() - 208;    // RTC time
+  yr = now.year() - 208;             // RTC time?
   mo = now.month();
   da = now.day();
   hr = now.hour();
@@ -17,7 +16,7 @@ void Time(tm localTime) {
   dow = now.dayOfTheWeek();
 
   /*
-    yr = localTime.tm_year - 100;  // ESP system Time
+    yr = localTime.tm_year - 100;    // ESP system Time
     mo = localTime.tm_mon + 1;
     da = localTime.tm_mday;
     hr = localTime.tm_hour;
@@ -25,11 +24,12 @@ void Time(tm localTime) {
     se = localTime.tm_sec;
     dow = now.dayOfTheWeek();
   */
+
   RTCd = "";
   RTCd += String(da) + "." + String(mo) + "." + String(yr);
 
   RTClogfile = "";
-  RTClogfile = "/" + RTCd + ".txt";
+  RTClogfile = "/" + RTCd + logFileFormat;
   RTClogfile.toCharArray(LogFile, 16);
 
   RTCprint = "";
@@ -64,18 +64,8 @@ void Logging() {
     SDdata += RTCd + ", ";
     SDdata += PowerLog;
     SDdata += tempProbes;
-
-    if (CCS811err == 0) {
-      SDdata += envData;
-    } else {
-      SDdata += "--, --, --, --, --, ";
-    }
-
-    if (activeVML) {
-      SDdata += "--, ";
-    } else {
-      SDdata += UVIsd;
-    }
+    SDdata += envData;
+    SDdata += UVIsd;
 
     if (screenState) {
       SDdata += "3, ";
@@ -89,61 +79,44 @@ void Logging() {
       SDdata += "0, ";
     }
 
-    if (ledB > 0) {
-      ledBprint = ledB / 10;
-      SDdata += ledBprint;
-      SDdata +=  ", ";
-    } else {
-      SDdata +=  "0, ";
-    }
-
-    if (lowPowerMode) {
-      SDdata += "1, ";
-    } else {
-      SDdata += "0, ";
-    }
-
-    if (deepSleepActive) {
-      SDdata += "1";
-    } else {
-      SDdata += "0, ";
-    }
-
-    SDdata   += translate_wl_status(WiFi.status());
+    SDdata += String(ledB) + ", ";
+    SDdata += String(lowPowerMode) + ", ";
+    SDdata += String(deepSleepActive) + ", ";
+    SDdata += translate_wl_status(WiFi.status());
 
     appendFile(SD, LogFile, SDdata.c_str());
   }
 }
 
-void panicLog() {
+void panicLog() {  // need Panic Trigger
 
-  if (SDpresent) {
-    panic = "";
-    panic += RTCt + RTCd + ", ";
-    panic += "Sleep in: " + String(100 - cycleCount) + "\n";
-    panic += "Power: " + String(Volts) + "V, " + String(Amps) + "A, " + String(SOC) + "%\n";
+  panic = "";
+  panic += RTCt + RTCd + ", ";
+  panic += "Sleep in, " + String(100 - cycleCount) + "\n";
+  panic += "Power, " + String(Volts) + "V, " + String(Amps) + "A, " + String(SOC) + "%\n";
 
-    panic += "Temps: ";
-    panic += String(t1) + "°, ";
-    panic += String(t2) + "°, ";
-    panic += String(t3) + "°, ";
-    panic += String(t4) + "°, ";
-    panic += String(t5) + "°, ";
-    panic += String(t6) + "°, ";
-    panic += String(t7) + "°, ";
-    panic += String(t8) + "°\n";
+  panic += "Probes, ";
+  panic += String(t1) + "°, ";
+  panic += String(t2) + "°, ";
+  panic += String(t3) + "°, ";
+  panic += String(t4) + "°, ";
+  panic += String(t5) + "°, ";
+  panic += String(t6) + "°, ";
+  panic += String(t7) + "°, ";
+  panic += String(t8) + "°\n";
 
-    panic += String(tempBME) + "°, " + String(tempSCD) + "°, " + String(tempHDC) + "°, " + String(tempRTC) + "°, " + String(amg.readThermistor()) + "°\n";
+  panic += "Sensors, " + String(tempBME) + "°, " + String(tempSCD) + "°, " + String(tempHDC) + "°, " + String(tempRTC) + "°, " + String(amg.readThermistor()) + "°\n";
 
-    if (wetAlarm) panic += "Ingress Detected!, ";
-    panic += String(humidSCD) + "%, " + String(humidHDC) + "%";
+  if (wetAlarm) panic += "Water Ingress Detected!, ";
+  panic += String(humidSCD) + "%, " + String(humidHDC) + "%, ";
 
-    if (fanActive) panic += ", Fan Active";
+  if (fanActive) panic += "Fan Active @ " + String(fanPWM); // add in fan Speed
 
-    panic += "\n";
+  panic += "\n";
 
-    appendFile(SD, LogFile, panic.c_str());
-  }
+  appendFile(SD, LogFile, panic.c_str());
+  if (RTCprint == "00:00:00") print_wakeup_reason();
+
 }
 
 

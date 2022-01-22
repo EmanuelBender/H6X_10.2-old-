@@ -1,6 +1,6 @@
 #include <pgmspace.h>
 
-void buttonInterrupt1() {
+void IRAM_ATTR buttonInterrupt1() {
   TFTon();
   if (pageCount == 0) {
     menuCar--;
@@ -10,7 +10,7 @@ void buttonInterrupt1() {
   }
 }
 
-void buttonInterrupt2() {
+void IRAM_ATTR buttonInterrupt2() {
   TFTon();
   if (pageCount == 0) {
     menuCar++;
@@ -91,12 +91,12 @@ void doubleClick() {    // double Click
         scrollTFT += 30;
         tft.fillRoundRect(-12, 171 - scrollTFT, 188, 32, 15, TFT_DARKGREY); // wifi box
         tft.fillRoundRect(-12, 181 - scrollTFT, 188, 32, 15, TFT_BLACK); // wifi box
-        tft.drawFastHLine(0, 51 - scrollTFT, TFT_WIDTH, TFT_MIDDLEGREY);
-        tft.drawFastHLine(0, 93 - scrollTFT, TFT_WIDTH, TFT_MIDDLEGREY);
-        tft.drawFastHLine(0, 132 - scrollTFT, TFT_WIDTH, TFT_DARKGREY);
-        tft.drawFastVLine(175, 94 - scrollTFT, 250, TFT_DARKGREY);
-        tft.drawFastVLine(122, 94 - scrollTFT, 75, TFT_DARKGREY);
-        tft.drawFastVLine(55, 94 - scrollTFT, 75, TFT_DARKGREY);
+        tft.drawFastHLine(0,   51  - scrollTFT, TFT_WIDTH, TFT_MIDDLEGREY);
+        tft.drawFastHLine(0,   93  - scrollTFT, TFT_WIDTH, TFT_MIDDLEGREY);
+        tft.drawFastHLine(0,   132 - scrollTFT, TFT_WIDTH, TFT_DARKGREY);
+        tft.drawFastVLine(175, 94  - scrollTFT, 250, TFT_DARKGREY);
+        tft.drawFastVLine(122, 94  - scrollTFT, 75,  TFT_DARKGREY);
+        tft.drawFastVLine(55,  94  - scrollTFT, 75,  TFT_DARKGREY);
         break;
       }
     case 2: scrollTFT += 30; break;
@@ -105,7 +105,7 @@ void doubleClick() {    // double Click
     case 5: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; flag = true; break;
     case 6: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; flag = true; break;
     case 7: loggingActive = !loggingActive; if (!SDpresent) loggingActive = false; flag = true; break;
-    case 8: measurePoint = !measurePoint; amgSetHiRes = !amgSetHiRes; break;
+    case 8: measurePoint  = !measurePoint; amgSetHiRes = !amgSetHiRes; break;
     case 9: {
         irOffset += 5;
         constHRtop = 93 - irOffset;

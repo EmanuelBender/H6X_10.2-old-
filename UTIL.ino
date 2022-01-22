@@ -1,23 +1,67 @@
 #include <pgmspace.h>
 
-void printTemperature(DeviceAddress deviceAddress) { // Dallas Temperature Sensor Void
 
-  tempC = sensors.getTempC(deviceAddress);
+void smlPRNT(String val1, const char* message, int x, int x2) { // small 0,94" OLED screen print data funtions
+  u8g2.clearBuffer();     // clear the internal memory
+  val1.toCharArray(charArr, 9);
 
-  if (tempC == DEVICE_DISCONNECTED_C) {
-    tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.print("--");
-    tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-    return;
+  u8g2.setFont(u8g2_font_logisoso20_tf);
+  u8g2.drawStr((u8g2.getStrWidth(charArr) / 2) + 32 + x, 24, charArr);
+
+  u8g2.setFont(u8g2_font_chroma48medium8_8r); // choose a suitable font
+  u8g2.drawStr((u8g2.getStrWidth(message) / 2) + 32 + x2, 32, message);
+
+  u8g2.sendBuffer();     // transfer internal memory to the display
+}
+
+void smlPRNT2(String val1, String val2, int x, int x2) { // small 0,94" OLED screen print data funtions
+  u8g2.clearBuffer();     // clear the internal memory
+  val1.toCharArray(charArr, 9);
+
+  u8g2.setFont(u8g2_font_logisoso18_tn);
+  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x, 20, charArr);
+
+  val2.toCharArray(charArr, 9);
+  u8g2.setFont(u8g2_font_helvR10_tn);
+  u8g2.drawStr((u8g2.getUTF8Width(charArr) / 2) + 32 + x2, 32, charArr);
+
+  u8g2.sendBuffer();     // transfer internal memory to the display
+}
+
+void smlCHRG() {    // have never tested this
+  u8g2.clearBuffer();     // clear the internal memory
+  u8g2.setFont(u8g2_font_battery19_tn); // 8 x 19
+
+  if (count == 1) {
+    u8g2.drawStr(37, 6, "0"); count++;
+  } else if (count == 2) {
+    u8g2.drawStr(37, 6, "1"); count++;
+  } else if (count == 3) {
+    u8g2.drawStr(37, 6, "2"); count++;
+  } else if (count == 4) {
+    u8g2.drawStr(37, 6, "3"); count++;
+  } else if (count == 5) {
+    u8g2.drawStr(37, 6, "4"); count++;
+  } else if (count >= 6) {
+    u8g2.drawStr(37, 6, "5");
+    switch (SOC) {
+      case 0 ... 20:   count = 1; break;
+      case 21 ... 40:  count = 2; break;
+      case 41 ... 60:  count = 3; break;
+      case 61 ... 80:  count = 4; break;
+      case 81 ... 100: count = 5; break;
+    }
   }
+  u8g2.sendBuffer();
+}
 
-  if (sensors.hasAlarm(deviceAddress)) {
-    tft.setTextColor(TFT_RED, TFT_BLACK);
-  } else {
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  }
-  tft.print(tempC, 0);
-  // tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+void smlICON(const char *message) {
+  u8g2.clearBuffer();     // clear the internal memory
+
+  u8g2.setFont(u8g2_font_open_iconic_embedded_4x_t);
+  u8g2.drawStr(u8g2.getUTF8Width(message) / 2 + 32, 0, message);
+
+  u8g2.sendBuffer();
 }
 
 
@@ -80,20 +124,6 @@ void readFile(fs::FS & fs, const char * path) {
   file.close();
 }
 
-void readLogFile(fs::FS & fs, const char * path) {
-  file = fs.open(path);
-  if (!file) {
-    SDpresent = false;
-    loggingActive = false;
-    return;
-  }
-  while (file.available()) {
-    buffer = file.readStringUntil('\n');
-
-    //    Serial.println(buffer); //Printing for debugging purpose
-    //    do some action here
-  }
-}
 
 void appendFile(fs::FS & fs, const char * path, const char * message) {
   //Serial.printf("Appending to file: %s\n", path);
@@ -106,6 +136,238 @@ void appendFile(fs::FS & fs, const char * path, const char * message) {
   }
   file.print(message);//  Message appended
   file.close();
+}
+
+
+
+void readLogFile(fs::FS & fs, const char * path) {
+  file = fs.open(path);
+  if (!file) {
+    SDpresent = false;
+    loggingActive = false;
+    putPersistentBool("loggingActive", loggingActive);
+    return;
+  } else {
+
+    idx0 = 1;
+    idx1 = 1;
+    idx2 = 1;
+    idx3 = 1;
+    idx4 = 1;
+//    idx5 = 1;
+//    idx6 = 1;
+//    idx7 = 1;
+//    idx8 = 1;
+//    idx9 = 1;
+//    idx10 = 1;
+//    idx11 = 1;
+//    idx12 = 1;
+//    idx13 = 1;
+//    idx14 = 1;
+    i = 0;
+    x = 0;
+    idx = 0;
+
+    while (file.available() /*&& file.peek() != '\n'*/ && idx <= 255) {  // peek returns the next character without incrementing the read index
+      recall[idx] = file.read();
+      //      Serial.print(recall[idx]);
+
+      if (recall[idx] == ',') {
+        i++;
+      }
+
+      if (idx == 0) {   // TIME
+        if (recall[idx + 1] != '0') {
+          recallTIME = recall[idx + 1];
+        }
+        if (recall[idx + 2] != '0') {
+          recallTIME = recall[idx + 2];
+        } else {
+          recallTIME = '0';
+        }
+      }
+
+      if (i == 1) {      // SOC
+        recallSOC = recall[idx + 3];
+        if (!recallSOC < 10) recallSOC += recall[idx + 4];
+      }
+      if (i == 3) {    // AMPS
+        recallAMP = recall[idx + 3];
+        recallAMP += recall[idx + 4];
+        recallAMP += recall[idx + 5];
+        recallAMP += recall[idx + 6];
+      }
+
+      if (recall[13] == '.') {
+        if (i == 13) {       // SCD
+          recallSCD = recall[idx + 3];
+          if (recallSCD.toInt() != 0) {
+            recallSCD += recall[idx + 4];
+            if (recall[idx + 5] != ',') recallSCD += recall[idx + 5];
+            if (recall[idx + 6] != ',') recallSCD += recall[idx + 6];
+          }
+        }
+        if (i == 14) {   // Temp1
+          recallTemp1 = recall[idx + 3];
+          if (recallTemp1.toInt() != 0) {
+            recallTemp1 += recall[idx + 4];
+            recallTemp1 += recall[idx + 5];
+            recallTemp1 += recall[idx + 6];
+            recallTemp1 += recall[idx + 7];
+          }
+        }
+        if (i == 15) {    // RH
+          recallRH = recall[idx + 3];
+          if (recallRH.toInt() != 0) {
+            recallRH += recall[idx + 4];
+            recallRH += recall[idx + 5];
+            recallRH += recall[idx + 6];
+            recallRH += recall[idx + 7];
+          }
+        }
+        if (i == 16) {    // TVOCccs
+          recallCCSc = recall[idx + 3];
+          if (recallCCSc.toInt() != 0) {
+            recallCCSc += recall[idx + 4];
+            recallCCSc += recall[idx + 5];
+            if (recall[idx + 6] != ',') recallCCSc += recall[idx + 6];
+            if (recall[idx + 7] != ',') recallCCSc += recall[idx + 7];
+          }
+        }
+        if (i == 17) {   // CO2ccs
+          recallCCSt = recall[idx + 3];
+          if (recallCCSt.toInt() != 0) {
+            recallCCSt += recall[idx + 4];
+            recallCCSt += recall[idx + 5];
+            if (recall[idx + 6] != ',') recallCCSt += recall[idx + 6];
+            if (recall[idx + 7] != ',') recallCCSt += recall[idx + 7];
+          }
+        }
+        if (i == 20) {
+          recallUV = recall[idx + 3];
+          if (recallUV.toInt() != 0) {
+            recallUV += recall[idx + 4];
+          }
+        }
+
+
+        recallSampleCollect(recallTIME);
+
+      }
+
+      idx++;
+      if (file.peek() == 10) { // Line Ending - 10
+        i = 0;
+        idx = 0;
+        /* if (recall[13] == '.') {
+
+            Serial.println();
+            Serial.println("TME: "    + recallTIME);
+            Serial.println("SOC: "    + recallSOC  + "%");
+            Serial.println("AMP: "    + recallAMP  + "A");
+            Serial.println("CO2: "    + recallSCD  + " ppm");
+            Serial.println("Tmp: "    + recallTemp1 + "°");
+            Serial.println("RH%: "    + recallRH   + "%");
+            Serial.println("CO2c: "   + recallCCSc + " ppm");
+            Serial.print("TVOC: "     + recallCCSt + " ppb");
+
+          } */
+      }
+    }
+
+    file.close();
+
+    recallSampleDivide();
+
+    Serial.println();
+    Serial.println("TME: 0");
+    Serial.println("SOC: "    + String(SOC24array[0]));
+    Serial.println("AMP: "    + String(AMP24array[0]));
+    Serial.println("CO2: "    + String(SCD24array[0]));
+    Serial.println("Tmp: "    + String(TMP124array[0]));
+    Serial.println("RH%: "    + String(RH24array[0]));
+    Serial.println("CO2c: "   + String(CCSc24array[0]));
+    Serial.println("TVOC: "     + String(CCSt24array[0]));
+    Serial.println("TME: 1");
+    Serial.println("SOC: "    + String(SOC24array[1]));
+    Serial.println("AMP: "    + String(AMP24array[1]));
+    Serial.println("CO2: "    + String(SCD24array[1]));
+    Serial.println("Tmp: "    + String(TMP124array[1]));
+    Serial.println("RH%: "    + String(RH24array[1]));
+    Serial.println("CO2c: "   + String(CCSc24array[1]));
+    Serial.println("TVOC: "     + String(CCSt24array[1]));
+  }
+}
+
+void recallSampleCollect(String reHour) {
+  int temp = reHour.toInt();
+  switch (temp) {
+    case 0: idx0++;
+    case 1: idx1++;
+    case 2: idx2++;
+    case 3: idx3++;
+    case 4: idx4++;
+//     case 5: idx5++;
+//     case 6: idx6++;
+//     case 7: idx7++;
+//     case 8: idx8++;
+//     case 9: idx9++;
+//     case 10: idx10++;
+//     case 11: idx11++;
+//     case 12: idx12++;
+//     case 13: idx13++;
+//     case 14: idx14++;
+  }
+  SOC24array[temp]  += recallSOC.toInt();
+  AMP24array[temp]  += recallAMP.toDouble();
+  SCD24array[temp]  += recallSCD.toInt();
+  TMP124array[temp] += recallTemp1.toDouble();
+  RH24array[temp]   += recallRH.toDouble();
+  CCSc24array[temp] += recallCCSc.toInt();
+  CCSt24array[temp] += recallCCSt.toInt();
+}
+
+void recallSampleDivide() {
+
+  SOC24array[0]  /= idx0;
+  AMP24array[0]  /= idx0;
+  SCD24array[0]  /= idx0;
+  TMP124array[0] /= idx0;
+  RH24array[0]   /= idx0;
+  CCSc24array[0] /= idx0;
+  CCSt24array[0] /= idx0;
+
+  SOC24array[1]  /= idx1;
+  AMP24array[1]  /= idx1;
+  SCD24array[1]  /= idx1;
+  TMP124array[1] /= idx1;
+  RH24array[1]   /= idx1;
+  CCSc24array[1] /= idx1;
+  CCSt24array[1] /= idx1;
+
+  SOC24array[2]  /= idx2;
+  AMP24array[2]  /= idx2;
+  SCD24array[2]  /= idx2;
+  TMP124array[2] /= idx2;
+  RH24array[2]   /= idx2;
+  CCSc24array[2] /= idx2;
+  CCSt24array[2] /= idx2;
+
+  SOC24array[3]  /= idx3;
+  AMP24array[3]  /= idx3;
+  SCD24array[3]  /= idx3;
+  TMP124array[3] /= idx3;
+  RH24array[3]   /= idx3;
+  CCSc24array[3] /= idx3;
+  CCSt24array[3] /= idx3;
+
+  SOC24array[4]  /= idx4;
+  AMP24array[4]  /= idx4;
+  SCD24array[4]  /= idx4;
+  TMP124array[4] /= idx4;
+  RH24array[4]   /= idx4;
+  CCSc24array[4] /= idx4;
+  CCSt24array[4] /= idx4;
 }
 
 void drawBmp(fs::FS & fs, const char *filename, int16_t x, int16_t y) {
@@ -187,16 +449,15 @@ void print_wakeup_reason() {
     SDloghead += RTClog;
     if (deleteLog) SDloghead += "Log Deleted,";
     if (htmlRestart) {
+      deepSleepActive = false;
+      TFTon();
       SDloghead += "htmlRestart, #";
       SDloghead += String(counter);
-      SDloghead += ", a";
+      SDloghead += ", ";
       SDloghead += String(Revision);
-      SDloghead += "\n";
       htmlRestart = 0;
       putPersistentBool("htmlRestart", htmlRestart);
       tft.drawString("htmlRestart", 0, 0, 1);
-      TFTon();
-      deepSleepActive = false;
     }
   } else {
 
@@ -214,9 +475,8 @@ void print_wakeup_reason() {
         SDloghead += RTClog;
         SDloghead += "RTC_IO, #";
         SDloghead += String(counter);
-        SDloghead += ", a";
+        SDloghead += ", ";
         SDloghead += String(Revision);
-        SDloghead += "\n";
         tft.drawString("RTC_IO", 0, 0, 1);
         break;
       case ESP_SLEEP_WAKEUP_EXT1 : tft.drawString("Wakeup by external signal RTC_CNTL", 0, 0, 1);
@@ -226,9 +486,8 @@ void print_wakeup_reason() {
         SDloghead += RTClog;
         SDloghead += "RTC_CTRL, #";
         SDloghead += String(counter);
-        SDloghead += ", a";
+        SDloghead += ", ";
         SDloghead += String(Revision);
-        SDloghead += "\n";
         tft.drawString("RTC_CTRL", 0, 0, 1);
         break;
       case ESP_SLEEP_WAKEUP_TIMER : tft.drawString("Wakeup by timer", 0, 0, 1);
@@ -239,9 +498,8 @@ void print_wakeup_reason() {
         SDloghead += RTClog;
         SDloghead += "RTC_TIMER, #";
         SDloghead += String(counter);
-        SDloghead += ", a";
+        SDloghead += ", ";
         SDloghead += String(Revision);
-        SDloghead += "\n";
         tft.drawString("RTC_TIMER", 0, 0, 1);
         break;
       case ESP_SLEEP_WAKEUP_TOUCHPAD : tft.drawString("Wakeup by touchpad", 0, 0, 1);
@@ -252,9 +510,8 @@ void print_wakeup_reason() {
         SDloghead += RTClog;
         SDloghead += "RTC_TOUCHPAD, #";
         SDloghead += String(counter);
-        SDloghead += ", a";
+        SDloghead += ", ";
         SDloghead += String(Revision);
-        SDloghead += "\n";
         tft.drawString("RTC_TOUCHPAD", 0, 0, 1);
         break;
       case ESP_SLEEP_WAKEUP_ULP : tft.drawString("Wakeup by ULP program", 0, 0, 1);
@@ -265,9 +522,8 @@ void print_wakeup_reason() {
         SDloghead += RTClog;
         SDloghead += "RTC_ULP, #";
         SDloghead += String(counter);
-        SDloghead += ", a";
+        SDloghead += ", ";
         SDloghead += String(Revision);
-        SDloghead += "\n";
         tft.drawString("RTC_ULP", 0, 0, 1);
         break;
       default:
@@ -278,18 +534,23 @@ void print_wakeup_reason() {
         SDloghead += RTClog;
         SDloghead += "RESTART, #";
         SDloghead += String(counter);
-        SDloghead += ", a";
+        SDloghead += ", ";
         SDloghead += String(Revision);
-        if (rtcLostPower) {                           // RTC setup
-          SDloghead += ", Hard Reset\n";
+        if (rtcLostPower) {                           // RTC reset reason
+          SDloghead += ", Hard Reset, ";
           tft.drawString("Hard Reset ", 0, 0, 1);
         } else if (!rtcLostPower) {
-          SDloghead += ", Soft Reset\n";
+          SDloghead += ", Soft Reset, ";
           tft.drawString("Soft Reset ", 0, 0, 1);
         }
         break;
     }
   }
+  SDloghead += "WiFi: " +   String(WiFi.SSID()) + " - " + String(translate_wl_status(WiFi.status())) + ", ";
+  SDloghead += "CPU: "  +   String(getCpuFrequencyMhz()) + "Mhz, ";
+  SDloghead += "I2C: "  +   String(Wire.getClock()) + "MHz, ";
+  SDloghead += "ESP: "  +   String(esp_get_idf_version());
+  SDloghead += "\n";
   if (SDpresent) appendFile(SD, LogFile, SDloghead.c_str());
 }
 
@@ -323,9 +584,9 @@ const char* translateEncryptionType(wifi_auth_mode_t encryptionType) {
   switch (encryptionType) {
     case WIFI_AUTH_OPEN:            return "Open";
     case WIFI_AUTH_WEP:             return "WEP";
-    case WIFI_AUTH_WPA_PSK:         return "WPA";
+    case WIFI_AUTH_WPA_PSK:         return "WPA1";
     case WIFI_AUTH_WPA2_PSK:        return "WPA2";
-    case WIFI_AUTH_WPA_WPA2_PSK:    return "WPA1_2";
+    case WIFI_AUTH_WPA_WPA2_PSK:    return "WPA1+2";
     case WIFI_AUTH_WPA2_ENTERPRISE: return "WPA2_E";
   }
 }
@@ -368,8 +629,8 @@ double doDewPoint(double celsius, double humidity)  {
   return dewPoint;
 }
 
-// Thermal Cam Stuff:
-void drawpixels(float *p, uint8_t rows, uint8_t cols, uint8_t boxWidth, uint8_t boxHeight) {
+// Thermal Cam Stuff
+void drawpixels(float * p, uint8_t rows, uint8_t cols, uint8_t boxWidth, uint8_t boxHeight) {
 
   for (int y = 0; y < rows; y++) {
     for (int x = 0; x < cols; x++) {
@@ -390,7 +651,7 @@ void drawpixels(float *p, uint8_t rows, uint8_t cols, uint8_t boxWidth, uint8_t 
   }
 }
 
-float get_point(float *p, uint8_t rows, uint8_t cols, int8_t x, int8_t y) {
+float get_point(float * p, uint8_t rows, uint8_t cols, int8_t x, int8_t y) {
   if (x < 0)
     x = 0;
   if (y < 0)
@@ -402,7 +663,7 @@ float get_point(float *p, uint8_t rows, uint8_t cols, int8_t x, int8_t y) {
   return p[y * cols + x];
 }
 
-void set_point(float *p, uint8_t rows, uint8_t cols, int8_t x, int8_t y, float f) {
+void set_point(float * p, uint8_t rows, uint8_t cols, int8_t x, int8_t y, float f) {
   if ((x < 0) || (x >= cols))
     return;
   if ((y < 0) || (y >= rows))
@@ -412,7 +673,7 @@ void set_point(float *p, uint8_t rows, uint8_t cols, int8_t x, int8_t y, float f
 
 // src is a grid src_rows * src_cols
 // dest is a pre-allocated grid, dest_rows*dest_cols
-void interpolate_image(float *src, uint8_t src_rows, uint8_t src_cols, float *dest, uint8_t dest_rows, uint8_t dest_cols) {
+void interpolate_image(float * src, uint8_t src_rows, uint8_t src_cols, float * dest, uint8_t dest_rows, uint8_t dest_cols) {
   float mu_x = (src_cols - 1.0) / (dest_cols - 1.0);
   float mu_y = (src_rows - 1.0) / (dest_rows - 1.0);
 
@@ -450,7 +711,7 @@ float bicubicInterpolate(float p[], float x, float y) {
 }
 
 // src is rows*cols and dest is a 4-point array passed in already allocated!
-void get_adjacents_1d(float *src, float *dest, uint8_t rows, uint8_t cols, int8_t x, int8_t y) {
+void get_adjacents_1d(float * src, float * dest, uint8_t rows, uint8_t cols, int8_t x, int8_t y) {
 
   dest[0] = get_point(src, rows, cols, x - 1, y);  // pick two items to the left
   dest[1] = get_point(src, rows, cols, x - 2, y);
@@ -459,7 +720,7 @@ void get_adjacents_1d(float *src, float *dest, uint8_t rows, uint8_t cols, int8_
 }
 
 // src is rows*cols and dest is a 16-point array passed in already allocated!
-void get_adjacents_2d(float *src, float *dest, uint8_t rows, uint8_t cols, int8_t x, int8_t y) {
+void get_adjacents_2d(float * src, float * dest, uint8_t rows, uint8_t cols, int8_t x, int8_t y) {
 
   for (int8_t delta_y = -1; delta_y < 3; delta_y++) { // -1, 0, 1, 2
     float *row = dest + 4 * (delta_y + 1); // index into each chunk of 4
@@ -536,7 +797,6 @@ void createNeedle2(void) {
   // Keep needle tip 1 pixel inside dial circle to avoid leaving stray pixels
   needle2.fillCircle(piv_x, 5, 3, TFT_WHITE); // change y for moving sprite in /out
 }
-
 
 
 void createDialScale3(int16_t start_angle, int16_t end_angle, int16_t increment) {
@@ -646,24 +906,3 @@ uint16_t uviColor() {
   dd = MAXTEMP * 0.8182;
   }
 */
-
-/*
-  byte fanSpeed() {
-
-  const byte maxMeasurements = 8;
-  int myMeasurements[maxMeasurements] = {t1, t2, t3, t4, t5, t6, t7, t8};
-
-  byte maxIndex = 0;
-  int maxValue = myMeasurements[maxIndex];
-
-  for (byte i = 1; i < maxMeasurements; i++)
-  {
-    if (myMeasurements[i] > maxValue) {
-      maxValue = myMeasurements[i];
-      maxIndex = i;
-    }
-  }
-  fanPWM = constrain(map(maxValue, 40, 80, 0, 255),0 , 255); // mapping highest sensor temp from 40-80C to 0-255 for fan speed
-
-  return fanPWM;
-  } */
