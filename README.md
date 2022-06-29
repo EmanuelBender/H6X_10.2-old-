@@ -15,14 +15,14 @@
 
   
   
-//// follow the Progress Here: https://hackaday.io/project/177083-h6x-pod ////
+////<b> follow the progress Here: https://hackaday.io/project/177083-h6x-pod</b>////
 <br>
 <p><b>How the idea found me:</b><br/>
 
-i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from Kolkata to Kerala back up to Dharamshala and everywhere inbetween. 
+in 2019 i went to India where i travelled on Foot, Train and Motorbike from Kolkata to Kerala (north to south) back up to Dharamshala and everywhere inbetween. 
   
 Around March 2020 I was spending my time with new friends in Rishikesh, one of whom slowly got really sick, right when COVID really started in India.
-We questioned bringing her to the Hospital but couldnt really tell, no doctors to find and the medicine shops gave us wrong or fake antibiotics, which didn't help.
+We questioned bringing her to the Hospital but couldnt really tell, no doctors to find and the medicine shops gave us wrong or fake antibiotics, which didn't help. And unfortunately she wasn't being very cooperative to getting help.
 So, during that time we had the need for a thermometer but couldn't find any after searching whole Tapovan.
 Her condition worstened and nothing helped, so after a lot of convincing and back and forth, we brought her to the Rishikesh Hospital, masked up and evading the doctors in the entrances, who were to trying to catch and test all the "Covid Tourists".
 We found out, after the usual India chaos, that she had a bladder infection that had started spreading to her kidneys. <br/>
@@ -43,10 +43,9 @@ Trying to add functionality into every last square mm while keeping it 'minimal'
 
 You can see all the Planning, Prototypes and Material i made 'til now here: <br/>
 ______________________________________________________________________________
-<br/>
 https://hackaday.io/project/177083-h6x-pod <br/>
 https://www.dropbox.com/sh/55ojpmb22klrcrt/AAD_1oTMBvdd2am53Xtve0X7a?dl=0 <br/>
 ______________________________________________________________________________
 <p>
-<b>if you are interested in knowing more or joining me, write a comment or drop me a message.</b>
+<b>if you are interested in joining me, write a comment or drop me a message.</b>
 <p> <p/>
