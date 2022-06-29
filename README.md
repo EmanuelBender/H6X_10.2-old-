@@ -31,7 +31,7 @@ Trying to add functionality into every last square mm while keeping it 'minimal'
 <br/>
 <br/>
 
-You can see all the Planning, Prototypes and Material i made 'til now here: <br/>
+You can see some of the Planning, Prototypes and Material i made 'til now here: <br/>
 ______________________________________________________________________________
 https://hackaday.io/project/177083-h6x-pod <br/>
 https://www.dropbox.com/sh/55ojpmb22klrcrt/AAD_1oTMBvdd2am53Xtve0X7a?dl=0 <br/>
