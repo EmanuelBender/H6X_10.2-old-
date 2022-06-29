@@ -16,7 +16,7 @@
 <br>
 <p><b>The Story:</b><br/>
 
-i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from Goa to Kerala and back up to Dharamshala. 
+i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from Kolkata to Kerala back up to Dharamshala and everywhere inbetween. 
   
 Around March 2020 I was spending my time with new friends in Rishikesh, one of whom slowly got really sick, right when COVID really started in India.
 We questioned bringing her to the Hospital but couldnt really tell, no doctors to find and the medicine shops gave us wrong or fake antibiotics, which didn't help.
