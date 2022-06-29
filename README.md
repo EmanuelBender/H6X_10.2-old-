@@ -1,21 +1,11 @@
 
-<h1 style="font-family:verdana;">[H6X POD] [in development]</h1>
-- Your companion for the next Apocalypse -			
-
-<p>by eBender
-  
-  ***
-  The folder 'Data' needs to be uploaded into SPIFFS:  <br/>
-  https://www.dropbox.com/sh/bmwrnwbqetuh2u7/AAC5K0zCWdNCB6wX0uZKRcXGa?dl=0  <br/>
-  The Folder 'png' needs to be placed inside the Arduino/libraries folder:  <br/>
-  https://www.dropbox.com/sh/y5sa5zlwnrxwieb/AABRlWYoKeYzUxtkiJ8g8-vPa?dl=0  <br/>
-  ***
+<h1 style="font-family:verdana;", align=center>[H6X POD] [in development]</h1>
+<p align=center><b>- Your companion for the next Apocalypse -</b>
+<p align=center>by eBender
   
   ![11 0_15](https://user-images.githubusercontent.com/46021872/176563012-0dca9e1a-32f1-47ff-ae72-9348d3f23194.jpg)
 
-  
-  
-////<b> follow the progress Here: https://hackaday.io/project/177083-h6x-pod</b>////
+<p align=center><b> follow the progress Here: https://hackaday.io/project/177083-h6x-pod</b></p>
 <br>
 <p><b>How the idea found me:</b><br/>
 
