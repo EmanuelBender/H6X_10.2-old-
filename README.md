@@ -11,10 +11,13 @@
   https://www.dropbox.com/sh/y5sa5zlwnrxwieb/AABRlWYoKeYzUxtkiJ8g8-vPa?dl=0  <br/>
   ***
   
+  ![11 0_15](https://user-images.githubusercontent.com/46021872/176563012-0dca9e1a-32f1-47ff-ae72-9348d3f23194.jpg)
+
+  
   
 //// follow the Progress Here: https://hackaday.io/project/177083-h6x-pod ////
 <br>
-<p><b>The Story:</b><br/>
+<p><b>How the idea found me:</b><br/>
 
 i had the Idea after i returned from India where i had been traveling on Foot, Train and Motorbike from Kolkata to Kerala back up to Dharamshala and everywhere inbetween. 
   
