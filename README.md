@@ -1,12 +1,14 @@
 
-<h1 style="font-family:verdana;", align=center>[H6X] POD</h1>
+<h1 style="font-family:Helvetica;", align=center>[H6X] POD</h1>
 <p align=center><b>- Your companion for the next Apocalypse -</b>
 <p align=center>by eBender
   
+  <p align=center><b><a href="https://hackaday.io/project/177083-h6x-pod">Hackaday</a> <br>
+<a href="https://www.instagram.com/zen.diy/">Instagram</a>
+<br></b>
+  
   ![11 0_15](https://user-images.githubusercontent.com/46021872/176563012-0dca9e1a-32f1-47ff-ae72-9348d3f23194.jpg)
 
-<p align=center><b> follow the progress Here: https://hackaday.io/project/177083-h6x-pod</b></p>
-<br>
 <p><b>How the idea found me:</b><br/>
 
 in 2019 i went to India where i travelled on Foot, Train and Motorbike from Kolkata to Kerala (north to south) back up to Dharamshala and everywhere inbetween. 
@@ -31,11 +33,5 @@ Trying to add functionality into every last square mm while keeping it 'minimal'
 <br/>
 <br/>
 
-You can see some of the Planning, Prototypes and Material i made 'til now here: <br/>
 ______________________________________________________________________________
-https://hackaday.io/project/177083-h6x-pod <br/>
-https://www.dropbox.com/sh/55ojpmb22klrcrt/AAD_1oTMBvdd2am53Xtve0X7a?dl=0 <br/>
-______________________________________________________________________________
-<p>
-<b>if you are interested in joining me, write a comment or drop me a message.</b>
-<p> <p/>
+<p align=center><b>if you are interested in joining me, write a comment or drop me a message.</b></p>
