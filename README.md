@@ -1,6 +1,6 @@
 
 <h1 style="font-family:Helvetica;", align=center>[H6X] POD</h1>
-<p align=center><b>- Your companion for the next Apocalypse -</b>
+<p align=center><b>Your companion for the next Apocalypse</b>
 <p align=center>by eBender
   
   <p align=center><b><a href="https://hackaday.io/project/177083-h6x-pod">Hackaday</a> <br>
