@@ -1,5 +1,5 @@
 
-<h1 style="font-family:verdana;", align=center>[H6X POD] [in development]</h1>
+<h1 style="font-family:verdana;", align=center>[H6X] POD</h1>
 <p align=center><b>- Your companion for the next Apocalypse -</b>
 <p align=center>by eBender
   
