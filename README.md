@@ -13,7 +13,7 @@
 
 in 2019 i went to India where i travelled on Foot, Train and Motorbike from Kolkata to Kerala (north to south) back up to Dharamshala and everywhere inbetween. 
   
-Around March 2020 I was spending my time with new friends in Rishikesh, one of whom slowly got really sick, right when COVID really started in India. Unfortunately she wasn't being very cooperative with receiving help.
+Around March 2020 I was spending my time with friends in Rishikesh, one of whom slowly got really sick, right when COVID really started in India. Unfortunately she wasn't being very cooperative with receiving help.
 We pondered bringing her to the Hospital but couldnt really tell, no doctors to find and the medicine shops gave us wrong or fake antibiotics, which didn't help either. We were sure it wasnt Covid, but thats about it.<br>
 So, during that time we had the need for a thermometer but couldn't find any after searching whole Tapovan.
 Her condition worstened and nothing helped, so after a lot of convincing and back and forth, we brought her to the Rishikesh Hospital, masked up and evading the doctors in the entrances, who were to trying to catch and test all the "Covid Tourists".
