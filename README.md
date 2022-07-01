@@ -5,6 +5,7 @@
   
   <p align=center><b><a href="https://hackaday.io/project/177083-h6x-pod">Hackaday</a> <br>
 <a href="https://www.instagram.com/zen.diy/">Instagram</a>
+<a href="https://www.patreon.com/eBender">Patreon</a> 
 <br></b>
   
   ![11 0_15](https://user-images.githubusercontent.com/46021872/176563012-0dca9e1a-32f1-47ff-ae72-9348d3f23194.jpg)
