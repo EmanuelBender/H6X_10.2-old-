@@ -28,9 +28,7 @@ Our friend slowly got better with the help of antibiotics. Right after that, we 
 Government chartered ariplane, wich we almost missed. <br/>
 
 Back in Germany i started planning. Very little know how about machining coding etc. but i'm getting there, slowly but surely. <br/>
-Going through all the available arduino sensors and now looking into industrial sensors. <br/>
-Getting into deep rabbitholes about for example thermal conductivity of aluminium vs copper variants or making up a crude 'operating system'. <br/>
-Trying to add functionality into every last square mm while keeping it 'minimal' and robust. <br/>
+Trying to add a lot of sensible functionality while keeping it 'minimal' and robust. <br/>
 <br/>
 <br/>
 
