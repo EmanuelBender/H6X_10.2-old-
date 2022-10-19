@@ -33,13 +33,6 @@ Getting into deep rabbitholes about for example thermal conductivity of aluminiu
 Trying to add functionality into every last square mm while keeping it 'minimal' and robust. <br/>
 <br/>
 <br/>
-First PCB#1 Design - alpha 11.0:
-
-<img width="848" alt="Screenshot 2022-06-30 at 23 06 48" src="https://user-images.githubusercontent.com/46021872/176778421-4350a6ea-ec49-45ef-bc7c-b37c9a0fc0f1.png">
-
-<img width="854" alt="Screenshot 2022-06-30 at 23 13 42" src="https://user-images.githubusercontent.com/46021872/176779360-bc40b487-3a19-4d72-a5d6-23dc3f899f1f.png">
-
-<img width="1183" alt="Screenshot 2022-06-30 at 23 06 02" src="https://user-images.githubusercontent.com/46021872/176778495-121944c1-e763-45b8-9845-dd23261ba6b5.png">
 
 ______________________________________________________________________________
-<p align=center><b>if you are interested in joining me, write a comment or drop me a message.</b></p>
+<p align=center><b>if you are interested in supporting or joining me, write a comment or drop me a message or join my patreon.</b></p>
