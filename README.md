@@ -6,6 +6,7 @@
   <p align=center><b><a href="https://hackaday.io/project/177083-h6x-pod">Hackaday</a> <br>
 <a href="https://www.instagram.com/zen.diy/">Instagram</a><br>
 <a href="https://discord.gg/3JU6GMgVZk">Discord</a> <br>
+<a href="https://www.reddit.com/r/hex_pod/">Reddit</a> <br>
 <a href="https://www.patreon.com/eBender">Patreon</a> 
 <br></b>
 
