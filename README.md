@@ -7,8 +7,8 @@
 <a href="https://www.instagram.com/zen.diy/">Instagram</a><br>
 <a href="https://discord.gg/3JU6GMgVZk">Discord</a> <br>
 <a href="https://www.reddit.com/r/hex_pod/">Reddit</a> <br>
-<a href="https://www.patreon.com/eBender">Patreon</a> 
-<p><b>PCB production generously sponsored by <a href="https://www.pcbway.com">PCBway</a>
+<a href="https://www.patreon.com/eBender">Patreon</a> <br><br>
+<b>PCB production generously sponsored by <a href="https://www.pcbway.com">PCBway</a>
 <br></b>
 
 ![a11 2 darkRoom 6 3](https://user-images.githubusercontent.com/46021872/226058171-460dcfab-38cb-4363-80db-4e1024c49589.jpg)
