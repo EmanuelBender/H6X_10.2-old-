@@ -1,5 +1,5 @@
 
-<h1 style="font-family:Helvetica;", align=center>[H6X] POD</h1>
+<h1 style="font-family:Helvetica;", align=center>[HEX]POD</h1>
 <p align=center><b>Your companion for the next Apocalypse</b>
 <p align=center>by eBender
   
@@ -13,7 +13,7 @@
 
 ![a11 2 darkRoom 6 3](https://user-images.githubusercontent.com/46021872/226058171-460dcfab-38cb-4363-80db-4e1024c49589.jpg)
 
-<p><b>How the idea found me:</b><br/>
+<p><b>How the idea found me:<b/><br/>
 
 In 2019 i went to India where i travelled on Foot, Train and ultimately Motorbike from Kolkata to Kerala back up to Dharamshala and everywhere in between. So across the whole country twice.
 <br/>
