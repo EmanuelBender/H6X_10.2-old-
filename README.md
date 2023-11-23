@@ -1,7 +1,8 @@
 
 <h1 style="font-family:Helvetica;", align=center>[HEX]POD</h1>
-<p align=center><b>Your companion for the next Apocalypse</b>
+<p align=center><b>Your companion for the next Apocalypse</b></p>
 <p align=center>by eBender
+⚠️ This project is in an early state. </p>
   
   <p align=center><b><a href="https://hackaday.io/project/177083-h6x-pod">Hackaday</a> <br>
 <a href="https://www.instagram.com/zen.diy/">Instagram</a><br>
