@@ -1,5 +1,5 @@
 
-<h1 style="font-family:Helvetica;", align=center>[HEX]POD -old-</h1>
+<h1 style="font-family:Helvetica;", align=center>[HEX]POD -deprecated-</h1>
 <p align=center><b>Your companion for the next Apocalypse</b></p>
 <p align=center>by eBender<br>
 ⚠️ <a href="https://github.com/EmanuelBender/HEX_POD">NEW VERSION</a><br> 
